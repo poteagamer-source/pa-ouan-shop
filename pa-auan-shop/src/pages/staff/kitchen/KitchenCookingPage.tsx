@@ -1,0 +1,35 @@
+import { PageHeader } from "../../../components/staff/PageHeader";
+import { StatusOverviewCards } from "../../../components/staff/kitchen/StatusOverviewCards";
+import { SortDropdown } from "../../../components/staff/kitchen/SortDropdown";
+import { CookingOrderCard } from "../../../components/staff/kitchen/CookingOrderCard";
+import { useKitchenOrders } from "../../../context/KitchenOrdersContext";
+
+export function KitchenCookingPage() {
+  const { counts, byStatus, advance } = useKitchenOrders();
+  const cookingOrders = byStatus("cooking");
+
+  return (
+    <div className="max-w-4xl">
+      <PageHeader title="กำลังทำอาหาร" subtitle="ออเดอร์ที่กำลังปรุงอาหารอยู่" />
+
+      <StatusOverviewCards
+        counts={counts}
+        activeStatus="cooking"
+        linkFor={{ new: "../orders", cooking: ".", ready: "../ready", served: "../ready" }}
+      />
+
+      <div className="flex justify-between items-center mb-4">
+        <p className="text-sm font-semibold text-gray-700">กำลังทำอาหาร ({cookingOrders.length})</p>
+        <SortDropdown />
+      </div>
+
+      {cookingOrders.length === 0 ? (
+        <p className="text-sm text-gray-400 text-center py-10">ไม่มีออเดอร์ที่กำลังทำอยู่</p>
+      ) : (
+        cookingOrders.map((order) => (
+          <CookingOrderCard key={order.id} order={order} onAdvance={advance} />
+        ))
+      )}
+    </div>
+  );
+}

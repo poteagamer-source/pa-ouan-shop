@@ -1,0 +1,91 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum OrderStatus {
+  PENDING
+  COOKING
+  READY
+  SERVED
+  PAID
+  CANCELLED
+}
+
+model Category {
+  id       String   @id @default(cuid())
+  key      String   @unique // "bualoy" | "chaokuay" | "tubtim" | "soymilk" | "dessert"
+  label    String
+  colorText   String @default("text-gray-600")
+  colorBg     String @default("bg-gray-50")
+  colorBorder String @default("border-gray-300")
+  sortOrder Int     @default(0)
+  products Product[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Product {
+  id          String   @id @default(cuid())
+  name        String
+  price       Decimal  @db.Decimal(10, 2)
+  image       String
+  isTopping   Boolean  @default(false)
+  active      Boolean  @default(true)
+  bestseller  Boolean  @default(false)
+  recommended Boolean  @default(false)
+
+  // สต๊อก (สำหรับสินค้าสำเร็จรูป)
+  stockQty  Int?
+  stockUnit String? @default("ชิ้น")
+
+  categoryId String
+  category   Category @relation(fields: [categoryId], references: [id])
+
+  orderItems OrderItem[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([categoryId])
+}
+
+model Order {
+  id               String      @id @default(cuid())
+  orderCode        String      @unique // เช่น SD2026005 ไว้แสดงผลลูกค้า/ผู้จัดการ
+  tableCode        String      // เช่น A05
+  status           OrderStatus @default(PENDING)
+  paymentVerified  Boolean     @default(false)
+  slipImageUrl     String?
+  totalAmount      Decimal     @db.Decimal(10, 2)
+
+  items OrderItem[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status])
+  @@index([createdAt])
+}
+
+model OrderItem {
+  id        String  @id @default(cuid())
+  orderId   String
+  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  productId String?
+  product   Product? @relation(fields: [productId], references: [id])
+
+  productName String  // snapshot ชื่อสินค้า ณ เวลาสั่ง กันกรณีแก้ไขสินค้าภายหลัง
+  unitPrice   Decimal @db.Decimal(10, 2)
+  qty         Int     @default(1)
+  temperature String? // "hot" | "cold"
+  toppings    Json?   // [{ id, name, price }]
+
+  createdAt DateTime @default(now())
+}
