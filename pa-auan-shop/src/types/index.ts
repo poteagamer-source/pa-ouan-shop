@@ -13,6 +13,7 @@ export interface Product {
   image: string;
   bestseller?: boolean;
   recommended?: boolean;
+  active?: boolean;
 }
 
 export interface Topping {

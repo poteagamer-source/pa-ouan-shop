@@ -11,6 +11,7 @@ import toppingsRouter from "./routes/toppings.js";
 import stockRouter from "./routes/stock.js";
 import ordersRouter from "./routes/orders.js";
 import salesRouter from "./routes/sales.js";
+import { realtimeRouter } from "./realtime.js";
 
 const app = express();
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -31,6 +32,7 @@ app.use("/api/toppings", toppingsRouter);
 app.use("/api/stock", stockRouter);
 app.use("/api/orders", ordersRouter);
 app.use("/api/sales", salesRouter);
+app.use("/api/events", realtimeRouter);
 
 // Production: serve the Vite frontend from the same Render Web Service.
 if (existsSync(frontendDist)) {

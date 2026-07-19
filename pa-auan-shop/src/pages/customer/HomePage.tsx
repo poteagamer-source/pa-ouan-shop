@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { CategoryChips } from "../../components/customer/CategoryChips";
 import { CustomerPageLayout } from "../../components/customer/CustomerPageLayout";
 import { ProductCard } from "../../components/customer/ProductCard";
-import { fetchProducts } from "../../lib/api";
+import { fetchProducts, subscribeToUpdates } from "../../lib/api";
 import { useCategories } from "../../context/CategoriesContext";
 import { useMenuBrowse } from "../../context/MenuBrowseContext";
 import type { Product } from "../../types";
@@ -15,17 +15,29 @@ export function HomePage() {
 
   useEffect(() => {
     let active = true;
-    setLoading(true);
-    fetchProducts({ active: true })
-      .then((data) => {
-        if (active) setProducts(data);
-      })
-      .catch((err) => console.error("โหลดสินค้าไม่สำเร็จ:", err))
-      .finally(() => {
-        if (active) setLoading(false);
-      });
+    const load = (showLoading = false) => {
+      if (showLoading) setLoading(true);
+      fetchProducts({ active: true })
+        .then((data) => {
+          if (active) setProducts(data);
+        })
+        .catch((err) => console.error("โหลดสินค้าไม่สำเร็จ:", err))
+        .finally(() => {
+          if (active) setLoading(false);
+        });
+    };
+    load(true);
+    const unsubscribe = subscribeToUpdates((update) => {
+      if (update.resource === "products") load();
+    });
+    const fallback = window.setInterval(() => load(), 15000);
+    const refreshOnFocus = () => load();
+    window.addEventListener("focus", refreshOnFocus);
     return () => {
       active = false;
+      unsubscribe();
+      window.clearInterval(fallback);
+      window.removeEventListener("focus", refreshOnFocus);
     };
   }, []);
 

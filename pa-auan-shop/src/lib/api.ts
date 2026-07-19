@@ -12,6 +12,26 @@ import type {
 
 const BASE_URL = import.meta.env.VITE_API_URL ?? "/api";
 
+export interface RealtimeUpdate {
+  resource: "products" | "categories" | "toppings" | "stock" | "orders";
+  action: "created" | "updated" | "deleted";
+  id: string | null;
+  at: string;
+}
+
+/** Subscribe to server-side changes. Returns a cleanup function. */
+export function subscribeToUpdates(onUpdate: (update: RealtimeUpdate) => void): () => void {
+  const source = new EventSource(`${BASE_URL}/events`);
+  source.addEventListener("update", (event) => {
+    try {
+      onUpdate(JSON.parse((event as MessageEvent<string>).data) as RealtimeUpdate);
+    } catch {
+      // Ignore malformed events and keep the stream connected.
+    }
+  });
+  return () => source.close();
+}
+
 export class ApiError extends Error {
   status: number;
   constructor(message: string, status: number) {
@@ -65,7 +85,7 @@ export function fetchProduct(id: string): Promise<Product> {
 }
 
 export function createProduct(payload: {
-  id: string;
+  id?: string;
   name: string;
   price: number;
   category: CategoryId;

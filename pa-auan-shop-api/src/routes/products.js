@@ -1,5 +1,6 @@
 import { Router } from "express";
-import { query } from "../db.js";
+import { pool, query } from "../db.js";
+import { publishUpdate } from "../realtime.js";
 
 const router = Router();
 
@@ -56,20 +57,22 @@ router.get("/:id", async (req, res, next) => {
 router.post("/", async (req, res, next) => {
   try {
     const { id, name, price, category, image, bestseller = false, recommended = false } = req.body;
-    if (!id || !name || price === undefined || !category) {
-      return res.status(400).json({ error: "ต้องระบุ id, name, price, category" });
+    if (!name || price === undefined || !category) {
+      return res.status(400).json({ error: "ต้องระบุ name, price, category" });
     }
+    const productId = id || `P${Date.now()}`;
     const { rows } = await query(
       `INSERT INTO products (id, name, price, category_id, image, bestseller, recommended)
        VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *`,
-      [id, name, price, category, image ?? null, bestseller, recommended]
+      [productId, name, price, category, image ?? null, bestseller, recommended]
     );
     // สร้างแถวสต๊อกเริ่มต้นให้ด้วย
     await query(
       `INSERT INTO stock (product_id, stock_qty, unit) VALUES ($1, 0, 'ก้อน')
        ON CONFLICT (product_id) DO NOTHING`,
-      [id]
+      [productId]
     );
+    publishUpdate("products", "created", productId);
     res.status(201).json(mapProduct(rows[0]));
   } catch (err) {
     if (err.code === "23505") return res.status(409).json({ error: "มีรหัสสินค้านี้อยู่แล้ว" });
@@ -94,6 +97,7 @@ router.put("/:id", async (req, res, next) => {
       [req.params.id, name, price, category, image, bestseller, recommended, active]
     );
     if (!rows[0]) return res.status(404).json({ error: "ไม่พบสินค้า" });
+    publishUpdate("products", "updated", req.params.id);
     res.json(mapProduct(rows[0]));
   } catch (err) {
     next(err);
@@ -102,12 +106,24 @@ router.put("/:id", async (req, res, next) => {
 
 // DELETE /api/products/:id
 router.delete("/:id", async (req, res, next) => {
+  const client = await pool.connect();
   try {
-    const { rowCount } = await query("DELETE FROM products WHERE id = $1", [req.params.id]);
-    if (!rowCount) return res.status(404).json({ error: "ไม่พบสินค้า" });
+    await client.query("BEGIN");
+    // Keep historical order snapshots while allowing the menu product to be removed.
+    await client.query("UPDATE order_items SET product_id = NULL WHERE product_id = $1", [req.params.id]);
+    const { rowCount } = await client.query("DELETE FROM products WHERE id = $1", [req.params.id]);
+    if (!rowCount) {
+      await client.query("ROLLBACK");
+      return res.status(404).json({ error: "ไม่พบสินค้า" });
+    }
+    await client.query("COMMIT");
+    publishUpdate("products", "deleted", req.params.id);
     res.status(204).end();
   } catch (err) {
+    await client.query("ROLLBACK");
     next(err);
+  } finally {
+    client.release();
   }
 });
 
