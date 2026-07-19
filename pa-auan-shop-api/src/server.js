@@ -1,6 +1,9 @@
 import "dotenv/config";
 import express from "express";
 import cors from "cors";
+import { existsSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 
 import categoriesRouter from "./routes/categories.js";
 import productsRouter from "./routes/products.js";
@@ -10,6 +13,8 @@ import ordersRouter from "./routes/orders.js";
 import salesRouter from "./routes/sales.js";
 
 const app = express();
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const frontendDist = join(__dirname, "..", "..", "pa-auan-shop", "dist");
 
 app.use(
   cors({
@@ -27,10 +32,15 @@ app.use("/api/stock", stockRouter);
 app.use("/api/orders", ordersRouter);
 app.use("/api/sales", salesRouter);
 
-// 404
-app.use((req, res) => {
-  res.status(404).json({ error: `ไม่พบเส้นทาง ${req.method} ${req.path}` });
-});
+// Production: serve the Vite frontend from the same Render Web Service.
+if (existsSync(frontendDist)) {
+  app.use(express.static(frontendDist));
+  app.get("*", (_req, res) => res.sendFile(join(frontendDist, "index.html")));
+} else {
+  app.use((req, res) => {
+    res.status(404).json({ error: `ไม่พบเส้นทาง ${req.method} ${req.path}` });
+  });
+}
 
 // error handler กลาง
 // eslint-disable-next-line no-unused-vars

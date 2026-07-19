@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: pa-ouan-shop
+    runtime: node
+    plan: free
+    buildCommand: npm --prefix pa-auan-shop-api install && npm --prefix pa-auan-shop install && npm --prefix pa-auan-shop run build
+    startCommand: npm --prefix pa-auan-shop-api start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_VERSION
+        value: 22
+      - key: DATABASE_URL
+        sync: false
