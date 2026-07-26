@@ -1,5 +1,4 @@
 import { useMemo } from "react";
-import { Trophy } from "lucide-react";
 import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
 import { PageHeader } from "../../../components/staff/PageHeader";
 import { useKitchenOrders } from "../../../context/KitchenOrdersContext";
@@ -114,14 +113,6 @@ export function WaiterServedPage() {
               <span className="ml-auto font-medium text-gray-800">
                 {totalOrders - counts.served} รายการ ({100 - servedPct}%)
               </span>
-            </div>
-          </div>
-
-          <div className="rounded-2xl bg-green-50 border border-green-100 p-4 flex items-start gap-3">
-            <Trophy className="w-8 h-8 text-amber-500 shrink-0" />
-            <div>
-              <p className="text-sm font-semibold text-green-700">เก่งมาก!</p>
-              <p className="text-xs text-green-600">เสิร์ฟครบทุกออเดอร์แล้ว รักษามาตรฐานการบริการให้ดีต่อไป 💚</p>
             </div>
           </div>
 
