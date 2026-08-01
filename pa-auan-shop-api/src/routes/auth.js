@@ -24,7 +24,8 @@ router.post("/setup", async (req, res, next) => {
     const username = String(req.body?.username ?? "").trim().toLowerCase();
     const displayName = String(req.body?.displayName ?? "").trim();
     const password = String(req.body?.password ?? "");
-    if (!validUsername(username) || displayName.length < 2) return res.status(400).json({ error: "ชื่อผู้ใช้หรือชื่อที่แสดงไม่ถูกต้อง" });
+    if (displayName.length < 2) return res.status(400).json({ error: "ชื่อที่แสดงต้องมีอย่างน้อย 2 ตัวอักษร" });
+    if (!validUsername(username)) return res.status(400).json({ error: "ชื่อผู้ใช้ต้องมี 3-50 ตัว และใช้ได้เฉพาะ a-z, 0-9, จุด, _ หรือ -" });
     if (password.length < 10) return res.status(400).json({ error: "รหัสผ่านต้องมีอย่างน้อย 10 ตัวอักษร" });
     const passwordHash = await hashPassword(password);
     await client.query("BEGIN");
