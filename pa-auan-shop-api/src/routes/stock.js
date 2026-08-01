@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { query } from "../db.js";
+import { publishUpdate } from "../realtime.js";
 
 const router = Router();
 
@@ -36,6 +37,9 @@ router.get("/", async (_req, res, next) => {
 router.put("/:productId", async (req, res, next) => {
   try {
     const { stockQty, unit, active } = req.body;
+    if (stockQty !== undefined && (!Number.isInteger(Number(stockQty)) || Number(stockQty) < 0)) {
+      return res.status(400).json({ error: "จำนวนสต๊อกต้องเป็นเลขจำนวนเต็มตั้งแต่ 0 ขึ้นไป" });
+    }
 
     if (stockQty !== undefined || unit !== undefined) {
       await query(
@@ -58,6 +62,7 @@ router.put("/:productId", async (req, res, next) => {
       [req.params.productId]
     );
     if (!rows[0]) return res.status(404).json({ error: "ไม่พบสินค้า" });
+    publishUpdate("stock", "updated", req.params.productId);
     res.json(mapStock(rows[0]));
   } catch (err) {
     next(err);
@@ -68,13 +73,21 @@ router.put("/:productId", async (req, res, next) => {
 router.patch("/:productId/adjust", async (req, res, next) => {
   try {
     const delta = Number(req.body.delta ?? 0);
+    if (!Number.isInteger(delta) || delta === 0 || Math.abs(delta) > 10000) {
+      return res.status(400).json({ error: "จำนวนที่เพิ่มหรือลดไม่ถูกต้อง" });
+    }
     const { rows } = await query(
-      `UPDATE stock SET stock_qty = GREATEST(stock_qty + $2, 0), updated_at = now()
-       WHERE product_id = $1 RETURNING *`,
+      `WITH updated AS (
+         UPDATE stock SET stock_qty = GREATEST(stock_qty + $2, 0), updated_at = now()
+         WHERE product_id = $1 RETURNING *
+       )
+       SELECT p.*, u.stock_qty, u.unit, u.low_at
+       FROM updated u JOIN products p ON p.id = u.product_id`,
       [req.params.productId, delta]
     );
     if (!rows[0]) return res.status(404).json({ error: "ไม่พบสินค้า" });
-    res.json({ productId: rows[0].product_id, stockQty: rows[0].stock_qty });
+    publishUpdate("stock", "updated", req.params.productId);
+    res.json(mapStock(rows[0]));
   } catch (err) {
     next(err);
   }

@@ -169,7 +169,7 @@ export function updateStock(
   return request(`/stock/${productId}`, { method: "PUT", body: JSON.stringify(payload) });
 }
 
-export function adjustStock(productId: string, delta: number): Promise<{ productId: string; stockQty: number }> {
+export function adjustStock(productId: string, delta: number): Promise<StockItem> {
   return request(`/stock/${productId}/adjust`, { method: "PATCH", body: JSON.stringify({ delta }) });
 }
 

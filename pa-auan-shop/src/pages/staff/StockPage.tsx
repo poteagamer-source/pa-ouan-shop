@@ -1,256 +1,104 @@
-import { useMemo, useState } from "react";
-import { Search, CheckCircle2, XCircle, Grid2x2, Package, Trash2 } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { CheckCircle2, Grid2x2, Loader2, Minus, Package, Plus, Search, XCircle } from "lucide-react";
 import { PageHeader } from "../../components/staff/PageHeader";
 import { StatCard } from "../../components/staff/StatCard";
 import { CategorySidebar } from "../../components/staff/CategorySidebar";
-import { categories, categoryMeta, stockItems } from "../../data/mockData";
-import type { CategoryId } from "../../types";
+import { categoryMeta } from "../../config/constants";
+import { adjustStock, fetchStock, subscribeToUpdates, updateStock } from "../../lib/api";
+import type { CategoryId, StockItem } from "../../types";
 
-const PAGE_SIZE = 4;
+const PAGE_SIZE = 6;
 
 export function StockPage() {
+  const [items, setItems] = useState<StockItem[]>([]);
   const [tab, setTab] = useState<"product" | "topping">("product");
   const [selectedCategory, setSelectedCategory] = useState<CategoryId>("bualoy");
   const [page, setPage] = useState(1);
   const [query, setQuery] = useState("");
-  const [active, setActive] = useState<Record<string, boolean>>({});
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [pending, setPending] = useState<Set<string>>(new Set());
+  const [draftQty, setDraftQty] = useState<Record<string, string>>({});
 
-  const categoryCounts = useMemo(() => {
-    const counts = {} as Record<CategoryId, number>;
-    categories.forEach((c) => {
-      counts[c.id] = stockItems.filter((p) => p.category === c.id).length;
-    });
-    return counts;
+  const load = useCallback(async () => {
+    try {
+      const data = await fetchStock();
+      setItems(data);
+      setDraftQty(Object.fromEntries(data.map((item) => [item.id, String(item.stockQty)])));
+      setError(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "โหลดสต๊อกไม่สำเร็จ");
+    } finally { setLoading(false); }
   }, []);
 
-  const listForCategory = useMemo(
-    () => stockItems.filter((p) => p.category === selectedCategory),
-    [selectedCategory],
-  );
+  useEffect(() => {
+    void load();
+    const unsubscribe = subscribeToUpdates((update) => {
+      if (update.resource === "stock" || update.resource === "products") void load();
+    });
+    return unsubscribe;
+  }, [load]);
 
-  const filtered = useMemo(() => {
-    if (!query.trim()) return listForCategory;
-    return listForCategory.filter((p) => p.name.toLowerCase().includes(query.trim().toLowerCase()));
-  }, [listForCategory, query]);
+  const categoryCounts = useMemo(() => {
+    const counts = Object.fromEntries((Object.keys(categoryMeta) as CategoryId[]).map((id) => [id, 0])) as Record<CategoryId, number>;
+    items.forEach((item) => { counts[item.category] = (counts[item.category] ?? 0) + 1; });
+    return counts;
+  }, [items]);
 
+  const filtered = useMemo(() => items.filter((item) => item.category === selectedCategory && item.name.toLowerCase().includes(query.trim().toLowerCase())), [items, selectedCategory, query]);
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
-  const pageItems = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const safePage = Math.min(page, totalPages);
+  const pageItems = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+  const openCount = items.filter((item) => item.active).length;
+  const lowCount = items.filter((item) => item.status === "low").length;
 
-  const isActive = (id: string) => active[id] ?? true;
-  const toggle = (id: string) => setActive((prev) => ({ ...prev, [id]: !isActive(id) }));
+  const applyResult = (updated: StockItem) => {
+    setItems((current) => current.map((item) => item.id === updated.id ? updated : item));
+    setDraftQty((current) => ({ ...current, [updated.id]: String(updated.stockQty) }));
+  };
 
-  const meta = categoryMeta[selectedCategory];
-  const openCount = stockItems.length;
+  const runUpdate = async (id: string, action: () => Promise<StockItem>) => {
+    if (pending.has(id)) return;
+    setPending((current) => new Set(current).add(id));
+    setError(null);
+    try { applyResult(await action()); }
+    catch (err) { setError(err instanceof Error ? err.message : "อัปเดตสต๊อกไม่สำเร็จ"); }
+    finally { setPending((current) => { const next = new Set(current); next.delete(id); return next; }); }
+  };
 
-  return (
-    <div className="max-w-6xl">
-      <PageHeader title="สต๊อกสินค้า" subtitle="จัดการสินค้าคงคลังสินค้า" />
+  const saveDraft = (item: StockItem) => {
+    const qty = Number(draftQty[item.id]);
+    if (!Number.isInteger(qty) || qty < 0) {
+      setError("จำนวนสต๊อกต้องเป็นเลขจำนวนเต็มตั้งแต่ 0 ขึ้นไป");
+      setDraftQty((current) => ({ ...current, [item.id]: String(item.stockQty) }));
+      return;
+    }
+    if (qty !== item.stockQty) void runUpdate(item.id, () => updateStock(item.id, { stockQty: qty }));
+  };
 
-      <div className="flex flex-wrap gap-4 mb-6">
-        <StatCard
-          icon={<Package className="w-5 h-5" />}
-          iconBgClass="bg-brand-light"
-          iconColorClass="text-brand"
-          label="สินค้าทั้งหมด"
-          value={String(openCount)}
-          sublabel="รายการ"
-          highlighted
-        />
-        <StatCard
-          icon={<CheckCircle2 className="w-5 h-5" />}
-          iconBgClass="bg-green-50"
-          iconColorClass="text-green-500"
-          label="เปิดขาย"
-          value={String(openCount)}
-          valueColorClass="text-green-600"
-          sublabel="รายการ"
-        />
-        <StatCard
-          icon={<XCircle className="w-5 h-5" />}
-          iconBgClass="bg-red-50"
-          iconColorClass="text-red-500"
-          label="ปิดขาย"
-          value="0"
-          valueColorClass="text-red-500"
-          sublabel="รายการ"
-        />
-        <StatCard
-          icon={<Grid2x2 className="w-5 h-5" />}
-          iconBgClass="bg-blue-50"
-          iconColorClass="text-blue-500"
-          label="หมวดหมู่สินค้า"
-          value={String(categories.length)}
-          valueColorClass="text-blue-500"
-          sublabel="หมวดหมู่"
-        />
-      </div>
-
-      <div className="flex gap-2 mb-4">
-        {(
-          [
-            { id: "product", label: "สินค้าสำเร็จรูป" },
-            { id: "topping", label: "ท็อปปิ้ง" },
-          ] as const
-        ).map((t) => (
-          <button
-            key={t.id}
-            type="button"
-            onClick={() => setTab(t.id)}
-            className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-              tab === t.id ? "bg-brand text-white" : "bg-white text-gray-500 border border-gray-200"
-            }`}
-          >
-            {t.label}
-          </button>
-        ))}
-      </div>
-
-      <div className="flex flex-col lg:flex-row gap-6">
-        <CategorySidebar
-          categoryCounts={categoryCounts}
-          selected={selectedCategory}
-          onSelect={(id) => {
-            setSelectedCategory(id);
-            setPage(1);
-          }}
-        />
-
-        <div className="flex-1 bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
-          <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-            <p className="text-sm font-semibold text-gray-700">
-              รายการสินค้าในหมวด : {meta.label} ({filtered.length} รายการ)
-            </p>
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-              <input
-                type="search"
-                value={query}
-                onChange={(e) => {
-                  setQuery(e.target.value);
-                  setPage(1);
-                }}
-                placeholder="ค้นหาสินค้า"
-                className="rounded-full border border-gray-200 pl-9 pr-4 py-2 text-sm outline-none focus:border-brand"
-              />
-            </div>
-          </div>
-
-          {tab === "topping" ? (
-            <div className="py-10 text-center text-gray-400 text-sm">ยังไม่มีข้อมูลสต๊อกท็อปปิ้ง</div>
-          ) : (
-            <>
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="text-left text-gray-400 border-b border-gray-100">
-                      <th className="py-2 font-medium">ลำดับ</th>
-                      <th className="py-2 font-medium">สินค้า</th>
-                      <th className="py-2 font-medium">ราคาขาย (บาท)</th>
-                      <th className="py-2 font-medium">คงเหลือ</th>
-                      <th className="py-2 font-medium">สถานะ</th>
-                      <th className="py-2 font-medium">จัดการ</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {pageItems.map((item, i) => (
-                      <tr key={item.id} className="border-b border-gray-50 last:border-0">
-                        <td className="py-3 text-gray-500">{(page - 1) * PAGE_SIZE + i + 1}</td>
-                        <td className="py-3">
-                          <div className="flex items-center gap-3">
-                            <img src={item.image} alt={item.name} className="w-10 h-10 rounded-lg object-cover" />
-                            <span className="text-gray-700">{item.name}</span>
-                          </div>
-                        </td>
-                        <td className="py-3 text-gray-700">{item.price.toFixed(2)} บาท</td>
-                        <td className="py-3 text-gray-700">
-                          {item.stockQty} {item.unit}
-                        </td>
-                        <td className="py-3">
-                          <span
-                            className={`text-xs font-medium ${
-                              item.status === "low" ? "text-red-500" : "text-green-600"
-                            }`}
-                          >
-                            {item.status === "low" ? "ใกล้หมด" : "เพียงพอ"}
-                          </span>
-                        </td>
-                        <td className="py-3">
-                          <div className="flex items-center gap-2">
-                            <button
-                              type="button"
-                              onClick={() => toggle(item.id)}
-                              aria-pressed={isActive(item.id)}
-                              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                                isActive(item.id) ? "bg-green-500" : "bg-gray-300"
-                              }`}
-                            >
-                              <span
-                                className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${
-                                  isActive(item.id) ? "translate-x-6" : "translate-x-1"
-                                }`}
-                              />
-                            </button>
-                            <button
-                              type="button"
-                              aria-label="ลบ"
-                              className="flex h-7 w-7 items-center justify-center rounded-full bg-red-500 text-white"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                    {pageItems.length === 0 && (
-                      <tr>
-                        <td colSpan={6} className="py-8 text-center text-gray-400">
-                          ไม่พบสินค้า
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-
-              <div className="flex items-center justify-between mt-4">
-                <p className="text-xs text-gray-400">
-                  แสดง {pageItems.length === 0 ? 0 : (page - 1) * PAGE_SIZE + 1} - {(page - 1) * PAGE_SIZE + pageItems.length} จาก {filtered.length} รายการ
-                </p>
-                <div className="flex items-center gap-1">
-                  <button
-                    type="button"
-                    disabled={page <= 1}
-                    onClick={() => setPage((p) => Math.max(1, p - 1))}
-                    className="w-7 h-7 rounded-full text-gray-400 disabled:opacity-30"
-                  >
-                    {"<"}
-                  </button>
-                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
-                    <button
-                      key={p}
-                      type="button"
-                      onClick={() => setPage(p)}
-                      className={`w-7 h-7 rounded-full text-sm ${
-                        p === page ? "bg-brand text-white" : "text-gray-500 hover:bg-gray-100"
-                      }`}
-                    >
-                      {p}
-                    </button>
-                  ))}
-                  <button
-                    type="button"
-                    disabled={page >= totalPages}
-                    onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                    className="w-7 h-7 rounded-full text-gray-400 disabled:opacity-30"
-                  >
-                    {">"}
-                  </button>
-                </div>
-              </div>
-            </>
-          )}
-        </div>
-      </div>
+  return <div className="max-w-6xl">
+    <PageHeader title="สต๊อกสินค้า" subtitle="เพิ่ม ลด และเปิด–ปิดสินค้าจากข้อมูลจริงใน Neon" />
+    {error && <p className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">{error}</p>}
+    <div className="mb-6 flex flex-wrap gap-4">
+      <StatCard icon={<Package className="h-5 w-5" />} iconBgClass="bg-brand-light" iconColorClass="text-brand" label="สินค้าทั้งหมด" value={String(items.length)} sublabel="รายการ" highlighted />
+      <StatCard icon={<CheckCircle2 className="h-5 w-5" />} iconBgClass="bg-green-50" iconColorClass="text-green-500" label="เปิดขาย" value={String(openCount)} valueColorClass="text-green-600" sublabel="รายการ" />
+      <StatCard icon={<XCircle className="h-5 w-5" />} iconBgClass="bg-red-50" iconColorClass="text-red-500" label="ปิดขาย" value={String(items.length - openCount)} valueColorClass="text-red-500" sublabel="รายการ" />
+      <StatCard icon={<Grid2x2 className="h-5 w-5" />} iconBgClass="bg-blue-50" iconColorClass="text-blue-500" label="สินค้าใกล้หมด" value={String(lowCount)} valueColorClass="text-blue-500" sublabel="รายการ" />
     </div>
-  );
+
+    <div className="mb-4 flex gap-2">{([{ id: "product", label: "สินค้าสำเร็จรูป" }, { id: "topping", label: "ท็อปปิ้ง" }] as const).map((option) => <button key={option.id} type="button" onClick={() => setTab(option.id)} className={`rounded-full px-4 py-2 text-sm font-medium ${tab === option.id ? "bg-brand text-white" : "border border-gray-200 bg-white text-gray-500"}`}>{option.label}</button>)}</div>
+
+    {tab === "topping" ? <div className="rounded-2xl border border-gray-100 bg-white py-12 text-center text-sm text-gray-400">ระบบยังไม่ได้กำหนดจำนวนคงเหลือแยกรายการสำหรับท็อปปิ้ง</div> :
+      <div className="flex flex-col gap-6 lg:flex-row">
+        <CategorySidebar categoryCounts={categoryCounts} selected={selectedCategory} onSelect={(id) => { setSelectedCategory(id); setPage(1); }} />
+        <div className="min-w-0 flex-1 rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-3"><p className="text-sm font-semibold text-gray-700">{categoryMeta[selectedCategory].label} ({filtered.length} รายการ)</p><div className="relative"><Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" /><input type="search" value={query} onChange={(event) => { setQuery(event.target.value); setPage(1); }} placeholder="ค้นหาสินค้า" className="rounded-full border border-gray-200 py-2 pl-9 pr-4 text-sm outline-none focus:border-brand" /></div></div>
+          {loading ? <div className="flex items-center justify-center gap-2 py-12 text-sm text-gray-400"><Loader2 className="h-5 w-5 animate-spin" /> กำลังโหลดสต๊อก</div> : <div className="overflow-x-auto"><table className="min-w-[760px] w-full text-sm"><thead><tr className="border-b border-gray-100 text-left text-gray-400"><th className="py-2 font-medium">สินค้า</th><th className="py-2 font-medium">ราคาขาย</th><th className="py-2 font-medium">จำนวนคงเหลือ</th><th className="py-2 font-medium">สถานะสต๊อก</th><th className="py-2 font-medium">เปิดขาย</th></tr></thead><tbody>
+            {pageItems.map((item) => { const busy = pending.has(item.id); return <tr key={item.id} className="border-b border-gray-50 last:border-0"><td className="py-3"><div className="flex items-center gap-3"><img src={item.image} alt={item.name} className="h-10 w-10 rounded-lg object-cover" /><span className="text-gray-700">{item.name}</span></div></td><td className="py-3 text-gray-700">{item.price.toFixed(2)} บาท</td><td className="py-3"><div className="flex items-center gap-2"><button disabled={busy || item.stockQty === 0} onClick={() => void runUpdate(item.id, () => adjustStock(item.id, -1))} className="flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 text-gray-600 disabled:opacity-30"><Minus className="h-4 w-4" /></button><input aria-label={`จำนวนคงเหลือ ${item.name}`} inputMode="numeric" value={draftQty[item.id] ?? item.stockQty} onChange={(event) => setDraftQty((current) => ({ ...current, [item.id]: event.target.value }))} onBlur={() => saveDraft(item)} onKeyDown={(event) => { if (event.key === "Enter") event.currentTarget.blur(); }} disabled={busy} className="w-16 rounded-lg border border-gray-200 px-2 py-1.5 text-center font-semibold outline-none focus:border-brand" /><button disabled={busy} onClick={() => void runUpdate(item.id, () => adjustStock(item.id, 1))} className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand text-white disabled:opacity-50"><Plus className="h-4 w-4" /></button><span className="text-xs text-gray-500">{item.unit}</span>{busy && <Loader2 className="h-4 w-4 animate-spin text-brand" />}</div></td><td className={`py-3 text-xs font-medium ${item.status === "low" ? "text-red-500" : "text-green-600"}`}>{item.status === "low" ? "ใกล้หมด" : "เพียงพอ"}</td><td className="py-3"><button type="button" disabled={busy} onClick={() => void runUpdate(item.id, () => updateStock(item.id, { active: !item.active }))} aria-pressed={item.active} className={`relative inline-flex h-6 w-11 items-center rounded-full ${item.active ? "bg-green-500" : "bg-gray-300"}`}><span className={`inline-block h-5 w-5 rounded-full bg-white transition-transform ${item.active ? "translate-x-6" : "translate-x-1"}`} /></button></td></tr>; })}
+            {pageItems.length === 0 && <tr><td colSpan={5} className="py-10 text-center text-gray-400">ไม่พบสินค้า</td></tr>}
+          </tbody></table></div>}
+          <div className="mt-4 flex items-center justify-between"><p className="text-xs text-gray-400">หน้า {safePage} จาก {totalPages}</p><div className="flex gap-2"><button disabled={safePage <= 1} onClick={() => setPage((current) => Math.max(1, current - 1))} className="rounded-lg border px-3 py-1 text-sm disabled:opacity-30">ก่อนหน้า</button><button disabled={safePage >= totalPages} onClick={() => setPage((current) => Math.min(totalPages, current + 1))} className="rounded-lg border px-3 py-1 text-sm disabled:opacity-30">ถัดไป</button></div></div>
+        </div>
+      </div>}
+  </div>;
 }
