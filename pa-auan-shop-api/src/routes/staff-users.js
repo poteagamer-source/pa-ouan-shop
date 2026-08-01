@@ -20,7 +20,9 @@ router.post("/", async (req, res, next) => {
     const displayName = String(req.body?.displayName ?? "").trim();
     const role = String(req.body?.role ?? "");
     if (!validUsername(username) || displayName.length < 2 || !STAFF_ROLES.includes(role)) return res.status(400).json({ error: "ข้อมูลบัญชีพนักงานไม่ถูกต้อง" });
-    const passwordHash = await hashPassword(String(req.body?.password ?? ""));
+    const password = String(req.body?.password ?? "");
+    if (password.length < 10) return res.status(400).json({ error: "รหัสผ่านต้องมีอย่างน้อย 10 ตัวอักษร" });
+    const passwordHash = await hashPassword(password);
     const { rows } = await query(
       `INSERT INTO staff_users (username, display_name, role, password_hash)
        VALUES ($1,$2,$3,$4) RETURNING id, username, display_name, role, active, created_at`,
@@ -42,7 +44,9 @@ router.patch("/:id", async (req, res, next) => {
     const active = req.body?.active;
     if (role !== undefined && !STAFF_ROLES.includes(role)) return res.status(400).json({ error: "role ไม่ถูกต้อง" });
     if (targetId === String(req.staffUser.id) && (active === false || (role && role !== "manager"))) return res.status(400).json({ error: "ไม่สามารถปิดหรือลดสิทธิ์บัญชีที่กำลังใช้งาน" });
-    const passwordHash = req.body?.password ? await hashPassword(String(req.body.password)) : null;
+    const password = req.body?.password === undefined ? null : String(req.body.password);
+    if (password !== null && password.length < 10) return res.status(400).json({ error: "รหัสผ่านต้องมีอย่างน้อย 10 ตัวอักษร" });
+    const passwordHash = password ? await hashPassword(password) : null;
     const { rows } = await query(
       `UPDATE staff_users SET
          display_name = COALESCE($2, display_name), role = COALESCE($3, role),

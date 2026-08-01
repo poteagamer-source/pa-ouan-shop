@@ -25,6 +25,7 @@ router.post("/setup", async (req, res, next) => {
     const displayName = String(req.body?.displayName ?? "").trim();
     const password = String(req.body?.password ?? "");
     if (!validUsername(username) || displayName.length < 2) return res.status(400).json({ error: "ชื่อผู้ใช้หรือชื่อที่แสดงไม่ถูกต้อง" });
+    if (password.length < 10) return res.status(400).json({ error: "รหัสผ่านต้องมีอย่างน้อย 10 ตัวอักษร" });
     const passwordHash = await hashPassword(password);
     await client.query("BEGIN");
     await client.query("SELECT pg_advisory_xact_lock(hashtext('pa-auan-staff-first-setup'))");
