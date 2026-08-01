@@ -1,5 +1,33 @@
 # pa-auan-shop-api
 
+## Payment API (provider adapters)
+
+Payment and kitchen state are independent:
+
+- `paymentStatus`: `pending | processing | succeeded | failed | cancelled | partially_refunded | refunded`
+- `fulfillmentStatus`: `not_started | queued | cooking | ready | served | cancelled`
+
+Create a hosted payment session:
+
+```http
+POST /api/orders/:orderId/payments
+Idempotency-Key: <uuid>
+Content-Type: application/json
+
+{"provider":"stripe","paymentMethod":"promptpay","returnPath":"/order/A01/status"}
+```
+
+Native provider webhooks:
+
+```text
+POST /api/webhooks/stripe   # Stripe-Signature + STRIPE_WEBHOOK_SECRET
+POST /api/webhooks/generic  # x-payment-signature HMAC-SHA256 for an external adapter
+```
+
+Amounts are stored as integer minor units plus a three-letter ISO 4217 currency code. Configure
+`SHOP_CURRENCY`, `SHOP_CURRENCY_EXPONENT`, `PUBLIC_APP_URL`, provider API keys, and webhook secrets
+before deployment. Never mark an order paid from the browser; only a verified webhook may do so.
+
 Backend API (Node.js + Express + PostgreSQL/Neon) สำหรับร้านบัวลอยแป๊ะอ้วน
 ครอบคลุม 4 ส่วน: **เมนูสินค้า (Menu), ออเดอร์/ครัว (Orders/Kitchen), สต๊อก (Stock), ยอดขาย (Sales)**
 
@@ -26,6 +54,7 @@ cp .env.example .env
 
 ```
 DATABASE_URL=postgresql://neondb_owner:<password>@<host>/neondb?sslmode=require&channel_binding=require
+PAYMENT_WEBHOOK_SECRET=<long-random-secret-shared-with-payment-provider>
 ```
 
 ## 2) สร้างตาราง + ใส่ข้อมูลตัวอย่าง
@@ -87,17 +116,16 @@ curl http://localhost:4000/api/products
 
 ### ออเดอร์ / ครัว — `/api/orders`
 
-สถานะออเดอร์: `pending → cooking → ready → served → paid`
-(`pending` ก็คือ "ออเดอร์ใหม่" ในบอร์ดครัว)
+สถานะการชำระเงินและสถานะครัวถูกแยกออกจากกันตามหัวข้อ Payment API ด้านบน
 
 | Method | Path | คำอธิบาย |
 |---|---|---|
-| GET | `/api/orders?status=pending,cooking&date=&table=` | รายการออเดอร์ (filter ได้) |
+| GET | `/api/orders?paymentStatus=succeeded&fulfillmentStatus=queued,cooking&date=&table=` | รายการออเดอร์ (filter ได้) |
 | GET | `/api/orders/:id` | ออเดอร์เดียว พร้อมรายการสินค้า+ท็อปปิ้ง |
-| POST | `/api/orders` | สร้างออเดอร์ใหม่จากตะกร้า (ตัดสต๊อกอัตโนมัติ) |
-| PATCH | `/api/orders/:id/status` | เปลี่ยนสถานะ `{status: "cooking"}` — ใช้ในบอร์ดครัว/พนักงานเสิร์ฟ |
-| PATCH | `/api/orders/:id/slip` | แนบรูปสลิปโอนเงิน `{slipImage}` |
-| PATCH | `/api/orders/:id/verify-payment` | พนักงานยืนยันสลิปถูกต้อง → `paid=true` |
+| POST | `/api/orders` | สร้างออเดอร์ใหม่ โดยยังไม่ตัดสต็อก |
+| POST | `/api/orders/:id/payments` | สร้าง hosted payment session |
+| GET | `/api/orders/:id/payments` | ดู payment attempts ของออเดอร์ |
+| PATCH | `/api/orders/:id/status` | เปลี่ยนสถานะครัว `{fulfillmentStatus: "cooking"}` |
 
 ตัวอย่าง POST `/api/orders`:
 
@@ -135,7 +163,9 @@ categories(id, label)
 products(id, name, price, category_id → categories, image, bestseller, recommended, active)
 toppings(id, name, price, image, tier)
 stock(product_id → products, stock_qty, unit, low_at)
-orders(id, table_name, order_date, order_time, status, note, total, paid, payment_verified, slip_image, served_at)
+orders(id, table_name, payment_status, fulfillment_status, currency, currency_exponent, amount_minor, total, ...)
+payments(id, order_id, provider, provider_payment_id, status, amount_minor, currency, idempotency_key, ...)
+payment_events(provider, event_id, payment_id, order_id, event_type, payload, processed_at)
 order_items(id, order_id → orders, product_id → products, product_name, base_price, quantity, temperature, line_total)
 order_item_toppings(id, order_item_id → order_items, topping_id, name, price)
 ```

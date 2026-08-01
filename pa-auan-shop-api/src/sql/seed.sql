@@ -91,15 +91,15 @@ ON CONFLICT (product_id) DO NOTHING;
 
 -- ออเดอร์ที่อยู่ในคิวครัว (ยังไม่จ่ายเงิน)
 INSERT INTO orders (id, table_name, order_date, order_time, status, note, total, paid, payment_verified, step_started_at) VALUES
-  ('1D2026005', 'A01', '2026-05-15', '17:30', 'pending', 'เย็น', 35, false, false, now() - interval '2 minutes'),
-  ('9C2026011', 'A08', '2026-05-15', '18:10', 'pending', 'เย็น', 35, false, false, now() - interval '1 minute'),
-  ('5D2026005b', 'A05', '2026-05-15', '20:30', 'cooking', 'เย็น', 45, false, false, now() - interval '8 minutes'),
-  ('123456789', 'A03', '2026-05-01', '16:30', 'ready', 'เย็น', 35, false, false, now() - interval '1 minute')
+  ('1D2026005', 'A01', '2026-05-15', '17:30', 'paid', 'เย็น', 35, true, true, now() - interval '2 minutes'),
+  ('9C2026011', 'A08', '2026-05-15', '18:10', 'paid', 'เย็น', 35, true, true, now() - interval '1 minute'),
+  ('5D2026005b', 'A05', '2026-05-15', '20:30', 'cooking', 'เย็น', 45, true, true, now() - interval '8 minutes'),
+  ('123456789', 'A03', '2026-05-01', '16:30', 'ready', 'เย็น', 35, true, true, now() - interval '1 minute')
 ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO orders (id, table_name, order_date, order_time, status, note, total, paid, payment_verified, served_at) VALUES
-  ('5A2026005', 'A02', '2026-05-01', '16:30', 'served', 'เย็น', 35, false, false, '16:35'),
-  ('987026003', 'A07', '2026-05-01', '15:50', 'served', 'ร้อน', 35, false, false, '15:58')
+  ('5A2026005', 'A02', '2026-05-01', '16:30', 'served', 'เย็น', 35, true, true, '16:35'),
+  ('987026003', 'A07', '2026-05-01', '15:50', 'served', 'ร้อน', 35, true, true, '15:58')
 ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO order_items (order_id, product_id, product_name, product_image, base_price, quantity, temperature, line_total) VALUES
@@ -119,10 +119,10 @@ SELECT id, 't5', 'ฝอยทอง', 10 FROM order_items WHERE order_id = '5D2
 
 -- ประวัติการขาย / ชำระเงินแล้ว (paid = true)
 INSERT INTO orders (id, table_name, order_date, order_time, status, total, paid, payment_verified) VALUES
-  ('SD2026005', 'A05', '2026-05-15', '20:30', 'paid', 45, true, true),
-  ('SD2026010', 'A10', '2026-05-25', '21:20', 'paid', 35, true, true),
-  ('SD2026001', 'A01', '2026-05-15', '17:30', 'paid', 35, true, true),
-  ('SD2026011', 'A01', '2026-05-31', '18:30', 'paid', 40, true, true)
+  ('SD2026005', 'A05', '2026-05-15', '20:30', 'served', 45, true, true),
+  ('SD2026010', 'A10', '2026-05-25', '21:20', 'served', 35, true, true),
+  ('SD2026001', 'A01', '2026-05-15', '17:30', 'served', 35, true, true),
+  ('SD2026011', 'A01', '2026-05-31', '18:30', 'served', 40, true, true)
 ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO order_items (order_id, product_id, product_name, product_image, base_price, quantity, temperature, line_total) VALUES
@@ -130,3 +130,18 @@ INSERT INTO order_items (order_id, product_id, product_name, product_image, base
   ('SD2026010', 'ck2', 'เฉาก๊วยน้ำลำไย', '/images/food-chaokuay.png', 35, 1, 'cold', 35),
   ('SD2026001', 'tt1', 'ทับทิมกรอบลำไย', '/images/food-tubtim.png', 35, 1, 'cold', 35),
   ('SD2026011', 'sm2', 'น้ำเต้าหู้เย็น', '/images/food-soymilk.png', 40, 1, 'cold', 40);
+
+-- Keep demo orders compatible with the separated payment/fulfillment model.
+UPDATE orders
+SET payment_status = CASE WHEN paid THEN 'succeeded' ELSE 'pending' END,
+    fulfillment_status = CASE
+      WHEN status = 'paid' THEN 'queued'
+      WHEN status IN ('cooking','ready','served','cancelled') THEN status
+      ELSE 'not_started'
+    END,
+    currency = 'THB', currency_exponent = 2,
+    amount_minor = round(total * 100)::bigint
+WHERE id IN (
+  '1D2026005','9C2026011','5D2026005b','123456789','5A2026005','987026003',
+  'SD2026005','SD2026010','SD2026001','SD2026011'
+);

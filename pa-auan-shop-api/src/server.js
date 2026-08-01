@@ -11,6 +11,8 @@ import toppingsRouter from "./routes/toppings.js";
 import stockRouter from "./routes/stock.js";
 import ordersRouter from "./routes/orders.js";
 import salesRouter from "./routes/sales.js";
+import paymentsRouter from "./routes/payments.js";
+import webhooksRouter from "./routes/webhooks.js";
 import { realtimeRouter } from "./realtime.js";
 
 const app = express();
@@ -22,7 +24,14 @@ app.use(
     origin: process.env.CORS_ORIGIN?.split(",") ?? "*",
   })
 );
-app.use(express.json({ limit: "5mb" })); // limit ใหญ่หน่อยเผื่อแนบรูปสลิปเป็น base64
+app.use(
+  express.json({
+    limit: "1mb",
+    verify: (req, _res, buffer) => {
+      req.rawBody = buffer;
+    },
+  })
+);
 
 app.get("/api/health", (_req, res) => res.json({ ok: true }));
 
@@ -31,7 +40,9 @@ app.use("/api/products", productsRouter);
 app.use("/api/toppings", toppingsRouter);
 app.use("/api/stock", stockRouter);
 app.use("/api/orders", ordersRouter);
+app.use("/api/orders", paymentsRouter);
 app.use("/api/sales", salesRouter);
+app.use("/api/webhooks", webhooksRouter);
 app.use("/api/events", realtimeRouter);
 
 // Production: serve the Vite frontend from the same Render Web Service.

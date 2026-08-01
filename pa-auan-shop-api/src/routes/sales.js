@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { query } from "../db.js";
+import { shopCurrency } from "../payments/money.js";
 
 const router = Router();
 
@@ -8,8 +9,10 @@ const router = Router();
 router.get("/", async (req, res, next) => {
   try {
     const { from, to, table } = req.query;
-    const conditions = ["o.paid = true"];
-    const params = [];
+    const currency = String(req.query.currency ?? shopCurrency().currency).toUpperCase();
+    if (!/^[A-Z]{3}$/.test(currency)) return res.status(400).json({ error: "currency ไม่ถูกต้อง" });
+    const params = [currency];
+    const conditions = ["o.payment_status IN ('succeeded','partially_refunded')", "o.currency = $1"];
 
     if (from) {
       params.push(from);
@@ -26,7 +29,7 @@ router.get("/", async (req, res, next) => {
 
     const { rows } = await query(
       `SELECT
-          o.id, o.table_name, o.total, o.order_date, o.order_time,
+          o.id, o.table_name, o.total, o.amount_minor, o.currency, o.order_date, o.order_time,
           o.payment_verified, o.slip_image,
           COALESCE(
             json_agg(
@@ -46,6 +49,8 @@ router.get("/", async (req, res, next) => {
         id: r.id,
         table: r.table_name,
         total: Number(r.total),
+        amountMinor: Number(r.amount_minor),
+        currency: r.currency,
         date: r.order_date,
         time: r.order_time,
         paymentVerified: r.payment_verified,
@@ -63,8 +68,10 @@ router.get("/", async (req, res, next) => {
 router.get("/summary", async (req, res, next) => {
   try {
     const { from, to } = req.query;
-    const conditions = ["o.paid = true"];
-    const params = [];
+    const currency = String(req.query.currency ?? shopCurrency().currency).toUpperCase();
+    if (!/^[A-Z]{3}$/.test(currency)) return res.status(400).json({ error: "currency ไม่ถูกต้อง" });
+    const params = [currency];
+    const conditions = ["o.payment_status IN ('succeeded','partially_refunded')", "o.currency = $1"];
 
     if (from) {
       params.push(from);
@@ -109,6 +116,7 @@ router.get("/summary", async (req, res, next) => {
     );
 
     res.json({
+      currency,
       revenue: Number(totals.rows[0].revenue),
       orderCount: Number(totals.rows[0].order_count),
       byDay: byDay.rows.map((r) => ({ date: r.date, revenue: Number(r.revenue), orderCount: Number(r.order_count) })),

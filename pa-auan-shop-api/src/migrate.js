@@ -8,9 +8,19 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 async function main() {
   const sql = readFileSync(join(__dirname, "sql", "schema.sql"), "utf8");
   console.log("▶ กำลังสร้างตาราง (schema.sql) ...");
-  await pool.query(sql);
-  console.log("✅ สร้างตารางเรียบร้อย");
-  await pool.end();
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    await client.query(sql);
+    await client.query("COMMIT");
+    console.log("✅ สร้างตารางเรียบร้อย");
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+    await pool.end();
+  }
 }
 
 main().catch((err) => {

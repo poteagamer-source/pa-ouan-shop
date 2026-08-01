@@ -1,15 +1,35 @@
 import { Router } from "express";
 import { pool, query } from "../db.js";
+import { decimalToMinor, minorToNumber, serializeMinor, shopCurrency } from "../payments/money.js";
+import { publishUpdate } from "../realtime.js";
 
 const router = Router();
+const PAYMENT_STATUSES = ["pending", "processing", "succeeded", "failed", "cancelled", "partially_refunded", "refunded"];
+const FULFILLMENT_STATUSES = ["not_started", "queued", "cooking", "ready", "served", "cancelled"];
+const STAFF_TRANSITIONS = { queued: "cooking", cooking: "ready", ready: "served" };
 
-const ORDER_STATUSES = ["pending", "cooking", "ready", "served", "paid"];
-
-/** ดึงออเดอร์แบบเต็ม (รวม items + toppings) ตามเงื่อนไข where ที่ส่งมา */
 async function fetchOrders(whereSql = "", params = []) {
   const { rows } = await query(
     `SELECT
         o.*,
+        (
+          SELECT json_build_object(
+            'id', p.id,
+            'orderId', p.order_id,
+            'provider', p.provider,
+            'providerPaymentId', p.provider_payment_id,
+            'paymentMethod', p.payment_method,
+            'status', p.status,
+            'amountMinor', p.amount_minor,
+            'refundedAmountMinor', p.refunded_amount_minor,
+            'currency', p.currency,
+            'checkoutUrl', p.checkout_url,
+            'failureCode', p.failure_code,
+            'failureMessage', p.failure_message
+          )
+          FROM payments p WHERE p.order_id = o.id
+          ORDER BY p.created_at DESC LIMIT 1
+        ) AS latest_payment,
         COALESCE(
           json_agg(
             json_build_object(
@@ -38,33 +58,52 @@ async function fetchOrders(whereSql = "", params = []) {
     params
   );
 
-  return rows.map((r) => ({
-    id: r.id,
-    table: r.table_name,
-    date: r.order_date,
-    time: r.order_time,
-    status: r.status,
-    note: r.note,
-    total: Number(r.total),
-    paid: r.paid,
-    paymentVerified: r.payment_verified,
-    slipImage: r.slip_image,
-    servedAt: r.served_at,
-    items: r.items,
+  return rows.map((row) => ({
+    id: row.id,
+    table: row.table_name,
+    date: row.order_date,
+    time: row.order_time,
+    paymentStatus: row.payment_status,
+    fulfillmentStatus: row.fulfillment_status,
+    currency: row.currency,
+    currencyExponent: row.currency_exponent,
+    amountMinor: serializeMinor(row.amount_minor),
+    note: row.note,
+    total: Number(row.total),
+    paid: row.paid,
+    paymentVerified: row.payment_verified,
+    paymentProvider: row.payment_provider,
+    paidAt: row.paid_at,
+    servedAt: row.served_at,
+    latestPayment: row.latest_payment,
+    items: row.items,
   }));
 }
 
-// GET /api/orders?status=pending,cooking&date=2026-05-15&table=A01
 router.get("/", async (req, res, next) => {
   try {
-    const { status, date, table } = req.query;
+    const { paymentStatus, fulfillmentStatus, status, date, table } = req.query;
+    const requestedPayment = paymentStatus ? String(paymentStatus).split(",").map((value) => value.trim()) : [];
+    const requestedFulfillment = String(fulfillmentStatus ?? status ?? "")
+      .split(",")
+      .map((value) => value.trim())
+      .filter(Boolean);
+    if (requestedPayment.some((value) => !PAYMENT_STATUSES.includes(value))) {
+      return res.status(400).json({ error: "สถานะการชำระเงินไม่ถูกต้อง" });
+    }
+    if (requestedFulfillment.some((value) => !FULFILLMENT_STATUSES.includes(value))) {
+      return res.status(400).json({ error: "สถานะการจัดเตรียมไม่ถูกต้อง" });
+    }
+
     const conditions = [];
     const params = [];
-
-    if (status) {
-      const statuses = String(status).split(",").map((s) => s.trim());
-      params.push(statuses);
-      conditions.push(`o.status = ANY($${params.length}::text[])`);
+    if (requestedPayment.length) {
+      params.push(requestedPayment);
+      conditions.push(`o.payment_status = ANY($${params.length}::text[])`);
+    }
+    if (requestedFulfillment.length) {
+      params.push(requestedFulfillment);
+      conditions.push(`o.fulfillment_status = ANY($${params.length}::text[])`);
     }
     if (date) {
       params.push(date);
@@ -82,7 +121,6 @@ router.get("/", async (req, res, next) => {
   }
 });
 
-// GET /api/orders/:id
 router.get("/:id", async (req, res, next) => {
   try {
     const orders = await fetchOrders("WHERE o.id = $1", [req.params.id]);
@@ -93,120 +131,127 @@ router.get("/:id", async (req, res, next) => {
   }
 });
 
-// POST /api/orders  — สร้างออเดอร์ใหม่จากตะกร้าลูกค้า
-// body: { id?, table, note, items: [{ productId, productName, productImage, basePrice, quantity, temperature, toppings:[{id,name,price}] }] }
 router.post("/", async (req, res, next) => {
   const client = await pool.connect();
+  let inTransaction = false;
   try {
     const { id, table, note, items } = req.body;
     if (!table || !Array.isArray(items) || items.length === 0) {
       return res.status(400).json({ error: "ต้องระบุ table และ items อย่างน้อย 1 รายการ" });
     }
 
+    const { currency, exponent } = shopCurrency();
     const orderId = id || `O${Date.now()}`;
-    let total = 0;
-    for (const it of items) {
-      const toppingSum = (it.toppings ?? []).reduce((s, t) => s + Number(t.price), 0);
-      total += (Number(it.basePrice) + toppingSum) * Number(it.quantity ?? 1);
+    const canonicalItems = [];
+    let totalMinor = 0n;
+
+    for (const item of items) {
+      const quantity = Number(item.quantity ?? 1);
+      if (!item.productId || !Number.isInteger(quantity) || quantity < 1 || quantity > 99) {
+        return res.status(400).json({ error: "ข้อมูลสินค้าและจำนวนไม่ถูกต้อง" });
+      }
+
+      const { rows: productRows } = await client.query(
+        "SELECT id, name, price, image FROM products WHERE id = $1 AND active = true",
+        [item.productId]
+      );
+      const product = productRows[0];
+      if (!product) return res.status(400).json({ error: `ไม่พบสินค้าที่เปิดขาย: ${item.productId}` });
+
+      const toppingIds = [...new Set((item.toppings ?? []).map((topping) => topping.id).filter(Boolean))];
+      let toppings = [];
+      if (toppingIds.length) {
+        const { rows } = await client.query(
+          "SELECT id, name, price FROM toppings WHERE id = ANY($1::text[])",
+          [toppingIds]
+        );
+        if (rows.length !== toppingIds.length) {
+          return res.status(400).json({ error: "มีท็อปปิ้งที่ไม่ถูกต้องหรือไม่มีอยู่ในระบบ" });
+        }
+        toppings = rows;
+      }
+
+      const baseMinor = decimalToMinor(product.price, exponent);
+      const toppingMinor = toppings.reduce((sum, topping) => sum + decimalToMinor(topping.price, exponent), 0n);
+      const lineMinor = (baseMinor + toppingMinor) * BigInt(quantity);
+      totalMinor += lineMinor;
+      canonicalItems.push({
+        product,
+        basePrice: minorToNumber(baseMinor, exponent),
+        quantity,
+        temperature: item.temperature ?? null,
+        toppings,
+        lineTotal: minorToNumber(lineMinor, exponent),
+      });
     }
 
     await client.query("BEGIN");
-
+    inTransaction = true;
     await client.query(
-      `INSERT INTO orders (id, table_name, note, total, status)
-       VALUES ($1,$2,$3,$4,'pending')`,
-      [orderId, table, note ?? null, total]
+      `INSERT INTO orders
+        (id, table_name, note, total, amount_minor, currency, currency_exponent,
+         payment_status, fulfillment_status, status)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,'pending','not_started','pending_payment')`,
+      [orderId, table, note ?? null, minorToNumber(totalMinor, exponent), totalMinor.toString(), currency, exponent]
     );
 
-    for (const it of items) {
-      const toppingSum = (it.toppings ?? []).reduce((s, t) => s + Number(t.price), 0);
-      const qty = Number(it.quantity ?? 1);
-      const lineTotal = (Number(it.basePrice) + toppingSum) * qty;
-
+    for (const item of canonicalItems) {
       const { rows: itemRows } = await client.query(
-        `INSERT INTO order_items (order_id, product_id, product_name, product_image, base_price, quantity, temperature, line_total)
+        `INSERT INTO order_items
+          (order_id, product_id, product_name, product_image, base_price, quantity, temperature, line_total)
          VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING id`,
-        [orderId, it.productId, it.productName, it.productImage ?? null, it.basePrice, qty, it.temperature ?? null, lineTotal]
+        [orderId, item.product.id, item.product.name, item.product.image ?? null, item.basePrice, item.quantity, item.temperature, item.lineTotal]
       );
-      const orderItemId = itemRows[0].id;
-
-      for (const t of it.toppings ?? []) {
+      for (const topping of item.toppings) {
         await client.query(
           `INSERT INTO order_item_toppings (order_item_id, topping_id, name, price) VALUES ($1,$2,$3,$4)`,
-          [orderItemId, t.id, t.name, t.price]
+          [itemRows[0].id, topping.id, topping.name, topping.price]
         );
       }
-
-      // ตัดสต๊อกอัตโนมัติเมื่อมีออเดอร์เข้ามา (ถ้าสินค้านั้นมีแถวสต๊อก)
-      await client.query(
-        `UPDATE stock SET stock_qty = GREATEST(stock_qty - $2, 0), updated_at = now() WHERE product_id = $1`,
-        [it.productId, qty]
-      );
     }
 
     await client.query("COMMIT");
-
+    inTransaction = false;
     const orders = await fetchOrders("WHERE o.id = $1", [orderId]);
+    publishUpdate("orders", "created", orderId);
     res.status(201).json(orders[0]);
   } catch (err) {
-    await client.query("ROLLBACK");
+    if (inTransaction) await client.query("ROLLBACK");
     next(err);
   } finally {
     client.release();
   }
 });
 
-// PATCH /api/orders/:id/status  { status: 'pending'|'cooking'|'ready'|'served'|'paid' }
-// ใช้จากบอร์ดครัว (ใหม่→กำลังทำ→พร้อมเสิร์ฟ) และพนักงานเสิร์ฟ (พร้อมเสิร์ฟ→เสิร์ฟแล้ว)
 router.patch("/:id/status", async (req, res, next) => {
   try {
-    const { status } = req.body;
-    if (!ORDER_STATUSES.includes(status)) {
-      return res.status(400).json({ error: `status ต้องเป็นหนึ่งใน ${ORDER_STATUSES.join(", ")}` });
+    const fulfillmentStatus = req.body?.fulfillmentStatus ?? req.body?.status;
+    if (!FULFILLMENT_STATUSES.includes(fulfillmentStatus)) {
+      return res.status(400).json({ error: "สถานะการจัดเตรียมไม่ถูกต้อง" });
+    }
+    const { rows } = await query(
+      `UPDATE orders
+       SET fulfillment_status = $2, status = $2, step_started_at = now(),
+           served_at = CASE WHEN $2 = 'served' THEN current_time ELSE served_at END
+       WHERE id = $1
+         AND payment_status = 'succeeded'
+         AND fulfillment_status = $3
+       RETURNING id`,
+      [req.params.id, fulfillmentStatus, Object.keys(STAFF_TRANSITIONS).find((key) => STAFF_TRANSITIONS[key] === fulfillmentStatus) ?? ""]
+    );
+    if (!rows[0]) {
+      const { rows: currentRows } = await query(
+        "SELECT payment_status, fulfillment_status FROM orders WHERE id = $1",
+        [req.params.id]
+      );
+      if (!currentRows[0]) return res.status(404).json({ error: "ไม่พบออเดอร์" });
+      return res.status(409).json({
+        error: `เปลี่ยนจาก ${currentRows[0].fulfillment_status} เป็น ${fulfillmentStatus} ไม่ได้ หรือยังไม่ได้ชำระเงิน`,
+      });
     }
 
-    const setServedAt = status === "served" ? ", served_at = to_char(now(), 'HH24:MI')" : "";
-    const setPaid = status === "paid" ? ", paid = true" : "";
-
-    const { rows } = await query(
-      `UPDATE orders SET status = $2${setServedAt}${setPaid} WHERE id = $1 RETURNING *`,
-      [req.params.id, status]
-    );
-    if (!rows[0]) return res.status(404).json({ error: "ไม่พบออเดอร์" });
-
     const orders = await fetchOrders("WHERE o.id = $1", [req.params.id]);
-    res.json(orders[0]);
-  } catch (err) {
-    next(err);
-  }
-});
-
-// PATCH /api/orders/:id/slip  { slipImage }  — ลูกค้าแนบสลิปหลังโอนเงิน (หน้า Payment)
-router.patch("/:id/slip", async (req, res, next) => {
-  try {
-    const { slipImage } = req.body;
-    if (!slipImage) return res.status(400).json({ error: "ต้องระบุ slipImage" });
-    const { rows } = await query(
-      `UPDATE orders SET slip_image = $2 WHERE id = $1 RETURNING *`,
-      [req.params.id, slipImage]
-    );
-    if (!rows[0]) return res.status(404).json({ error: "ไม่พบออเดอร์" });
-    const orders = await fetchOrders("WHERE o.id = $1", [req.params.id]);
-    res.json(orders[0]);
-  } catch (err) {
-    next(err);
-  }
-});
-
-// PATCH /api/orders/:id/verify-payment  — พนักงานตรวจสลิปแล้วยืนยันว่าจ่ายจริง
-router.patch("/:id/verify-payment", async (req, res, next) => {
-  try {
-    const { rows } = await query(
-      `UPDATE orders SET payment_verified = true, paid = true WHERE id = $1 RETURNING *`,
-      [req.params.id]
-    );
-    if (!rows[0]) return res.status(404).json({ error: "ไม่พบออเดอร์" });
-    const orders = await fetchOrders("WHERE o.id = $1", [req.params.id]);
+    publishUpdate("orders", "updated", req.params.id);
     res.json(orders[0]);
   } catch (err) {
     next(err);
