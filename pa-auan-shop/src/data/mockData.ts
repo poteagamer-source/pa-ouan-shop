@@ -87,7 +87,7 @@ export const stockItems = products.map((p, i) => {
   return {
     ...p,
     stockQty: qty,
-    unit: "ก้อน",
+    unit: "ถ้วย",
     active: true,
     status: qty <= 6 ? ("low" as const) : ("enough" as const),
   };

@@ -69,7 +69,7 @@ router.post("/", requireRole("manager"), async (req, res, next) => {
     );
     // สร้างแถวสต๊อกเริ่มต้นให้ด้วย
     await query(
-      `INSERT INTO stock (product_id, stock_qty, unit) VALUES ($1, 0, 'ก้อน')
+      `INSERT INTO stock (product_id, stock_qty, unit) VALUES ($1, 0, 'ถ้วย')
        ON CONFLICT (product_id) DO NOTHING`,
       [productId]
     );

@@ -30,10 +30,14 @@ CREATE TABLE IF NOT EXISTS toppings (
 CREATE TABLE IF NOT EXISTS stock (
   product_id text PRIMARY KEY REFERENCES products(id) ON DELETE CASCADE,
   stock_qty  int NOT NULL DEFAULT 0,
-  unit       text NOT NULL DEFAULT 'ก้อน',
+  unit       text NOT NULL DEFAULT 'ถ้วย',
   low_at     int NOT NULL DEFAULT 6,
   updated_at timestamptz NOT NULL DEFAULT now()
 );
+
+-- ใช้หน่วยสินค้าสำเร็จรูปเป็นถ้วย และปรับข้อมูลจากเวอร์ชันเดิม
+ALTER TABLE stock ALTER COLUMN unit SET DEFAULT 'ถ้วย';
+UPDATE stock SET unit = 'ถ้วย' WHERE unit = 'ก้อน';
 
 CREATE TABLE IF NOT EXISTS staff_users (
   id            bigserial PRIMARY KEY,

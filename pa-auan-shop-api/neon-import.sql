@@ -37,10 +37,14 @@ CREATE TABLE IF NOT EXISTS toppings (
 CREATE TABLE IF NOT EXISTS stock (
   product_id text PRIMARY KEY REFERENCES products(id) ON DELETE CASCADE,
   stock_qty  int NOT NULL DEFAULT 0,
-  unit       text NOT NULL DEFAULT 'ก้อน',
+  unit       text NOT NULL DEFAULT 'ถ้วย',
   low_at     int NOT NULL DEFAULT 6,
   updated_at timestamptz NOT NULL DEFAULT now()
 );
+
+-- ใช้หน่วยสินค้าสำเร็จรูปเป็นถ้วย และปรับข้อมูลจากเวอร์ชันเดิม
+ALTER TABLE stock ALTER COLUMN unit SET DEFAULT 'ถ้วย';
+UPDATE stock SET unit = 'ถ้วย' WHERE unit = 'ก้อน';
 
 CREATE TABLE IF NOT EXISTS staff_users (
   id            bigserial PRIMARY KEY,
@@ -301,30 +305,30 @@ ON CONFLICT (id) DO NOTHING;
 
 -- stock (สูตรเดิมจาก mockData.ts: qty = ((i * 7) % 28) + 3)
 INSERT INTO stock (product_id, stock_qty, unit) VALUES
-  ('bl1', 3, 'ก้อน'),
-  ('bl2', 10, 'ก้อน'),
-  ('bl3', 17, 'ก้อน'),
-  ('bl4', 24, 'ก้อน'),
-  ('bl5', 3, 'ก้อน'),
-  ('bl6', 10, 'ก้อน'),
-  ('bl7', 17, 'ก้อน'),
-  ('bl8', 24, 'ก้อน'),
-  ('bl9', 3, 'ก้อน'),
-  ('ck1', 10, 'ก้อน'),
-  ('ck2', 17, 'ก้อน'),
-  ('ck3', 24, 'ก้อน'),
-  ('ck4', 3, 'ก้อน'),
-  ('ck5', 10, 'ก้อน'),
-  ('ck6', 17, 'ก้อน'),
-  ('tt1', 24, 'ก้อน'),
-  ('tt2', 3, 'ก้อน'),
-  ('tt3', 10, 'ก้อน'),
-  ('sm1', 17, 'ก้อน'),
-  ('sm2', 24, 'ก้อน'),
-  ('ds1', 3, 'ก้อน'),
-  ('ds2', 10, 'ก้อน'),
-  ('ds3', 17, 'ก้อน'),
-  ('ds4', 24, 'ก้อน')
+  ('bl1', 3, 'ถ้วย'),
+  ('bl2', 10, 'ถ้วย'),
+  ('bl3', 17, 'ถ้วย'),
+  ('bl4', 24, 'ถ้วย'),
+  ('bl5', 3, 'ถ้วย'),
+  ('bl6', 10, 'ถ้วย'),
+  ('bl7', 17, 'ถ้วย'),
+  ('bl8', 24, 'ถ้วย'),
+  ('bl9', 3, 'ถ้วย'),
+  ('ck1', 10, 'ถ้วย'),
+  ('ck2', 17, 'ถ้วย'),
+  ('ck3', 24, 'ถ้วย'),
+  ('ck4', 3, 'ถ้วย'),
+  ('ck5', 10, 'ถ้วย'),
+  ('ck6', 17, 'ถ้วย'),
+  ('tt1', 24, 'ถ้วย'),
+  ('tt2', 3, 'ถ้วย'),
+  ('tt3', 10, 'ถ้วย'),
+  ('sm1', 17, 'ถ้วย'),
+  ('sm2', 24, 'ถ้วย'),
+  ('ds1', 3, 'ถ้วย'),
+  ('ds2', 10, 'ถ้วย'),
+  ('ds3', 17, 'ถ้วย'),
+  ('ds4', 24, 'ถ้วย')
 ON CONFLICT (product_id) DO NOTHING;
 
 
