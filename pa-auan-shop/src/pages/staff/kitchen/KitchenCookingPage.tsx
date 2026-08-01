@@ -5,7 +5,7 @@ import { CookingOrderCard } from "../../../components/staff/kitchen/CookingOrder
 import { useKitchenOrders } from "../../../context/KitchenOrdersContext";
 
 export function KitchenCookingPage() {
-  const { counts, byStatus, advance } = useKitchenOrders();
+  const { counts, byStatus, advance, pendingOrderIds, error } = useKitchenOrders();
   const cookingOrders = byStatus("cooking");
 
   return (
@@ -22,12 +22,13 @@ export function KitchenCookingPage() {
         <p className="text-sm font-semibold text-gray-700">กำลังทำอาหาร ({cookingOrders.length})</p>
         <SortDropdown />
       </div>
+      {error && <p className="mb-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">{error}</p>}
 
       {cookingOrders.length === 0 ? (
         <p className="text-sm text-gray-400 text-center py-10">ไม่มีออเดอร์ที่กำลังทำอยู่</p>
       ) : (
         cookingOrders.map((order) => (
-          <CookingOrderCard key={order.id} order={order} onAdvance={advance} />
+          <CookingOrderCard key={order.id} order={order} onAdvance={advance} busy={pendingOrderIds.has(order.id)} />
         ))
       )}
     </div>

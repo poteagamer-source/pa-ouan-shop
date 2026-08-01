@@ -8,8 +8,8 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { fetchOrders, updateOrderStatus } from "../lib/api";
-import type { Order, OrderStatus } from "../types";
+import { fetchOrders, subscribeToUpdates, updateOrderStatus } from "../lib/api";
+import type { FulfillmentStatus, Order } from "../types";
 import type { KitchenOrderStatus } from "../config/constants";
 
 /** สินค้า 1 รายการในออเดอร์ ตามที่ใช้แสดงผลฝั่งครัว/พนักงานเสิร์ฟ */
@@ -35,21 +35,25 @@ export interface KitchenOrder {
   servedAt?: string | null;
 }
 
-/** backend ใช้ "pending" แต่ฝั่งครัวเรียก "new" */
+/** ฝั่งครัวเรียก fulfillment status "queued" ว่า "new" */
 const API_TO_UI_STATUS: Record<string, KitchenOrderStatus> = {
-  pending: "new",
+  queued: "new",
   cooking: "cooking",
   ready: "ready",
   served: "served",
 };
-const UI_TO_API_STATUS: Record<KitchenOrderStatus, OrderStatus> = {
-  new: "pending",
+const UI_TO_API_STATUS: Record<KitchenOrderStatus, FulfillmentStatus> = {
+  new: "queued",
   cooking: "cooking",
   ready: "ready",
   served: "served",
 };
 
-function minutesAgoFromTime(time: string): number {
+function minutesAgoFromTime(time: string, stepStartedAt?: string | null): number {
+  if (stepStartedAt) {
+    const startedAt = new Date(stepStartedAt).getTime();
+    if (!Number.isNaN(startedAt)) return Math.max(0, Math.floor((Date.now() - startedAt) / 60000));
+  }
   const [h, m] = time.split(":").map(Number);
   if (Number.isNaN(h) || Number.isNaN(m)) return 0;
   const now = new Date();
@@ -74,8 +78,8 @@ function orderToKitchenOrder(order: Order): KitchenOrder {
       image: item.image ?? "",
     })),
     total: order.total,
-    status: API_TO_UI_STATUS[order.status] ?? "new",
-    stepStartedMinutesAgo: minutesAgoFromTime(order.time?.slice(0, 5) ?? order.time),
+    status: API_TO_UI_STATUS[order.fulfillmentStatus] ?? "new",
+    stepStartedMinutesAgo: minutesAgoFromTime(order.time?.slice(0, 5) ?? order.time, order.stepStartedAt),
     servedAt: order.servedAt,
   };
 }
@@ -88,14 +92,21 @@ const NEXT_STATUS: Record<KitchenOrderStatus, KitchenOrderStatus | null> = {
 };
 
 const POLL_INTERVAL_MS = 5000;
-const ACTIVE_STATUSES: OrderStatus[] = ["pending", "cooking", "ready", "served"];
+const ACTIVE_STATUSES: FulfillmentStatus[] = ["queued", "cooking", "ready"];
+
+function localDate(): string {
+  const now = new Date();
+  const offset = now.getTimezoneOffset() * 60_000;
+  return new Date(now.getTime() - offset).toISOString().slice(0, 10);
+}
 
 interface KitchenOrdersContextValue {
   orders: KitchenOrder[];
   counts: Record<KitchenOrderStatus, number>;
   byStatus: (status: KitchenOrderStatus) => KitchenOrder[];
   /** เลื่อนออเดอร์ไปยังขั้นตอนถัดไป (ใหม่ → กำลังทำ → พร้อมเสิร์ฟ → เสิร์ฟแล้ว) */
-  advance: (id: string) => void;
+  advance: (id: string) => Promise<boolean>;
+  pendingOrderIds: Set<string>;
   loading: boolean;
   error: string | null;
 }
@@ -106,12 +117,16 @@ export function KitchenOrdersProvider({ children }: { children: ReactNode }) {
   const [orders, setOrders] = useState<KitchenOrder[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [pendingOrderIds, setPendingOrderIds] = useState<Set<string>>(new Set());
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const loadOrders = useCallback(async () => {
     try {
-      const data = await fetchOrders({ status: ACTIVE_STATUSES });
-      setOrders(data.map(orderToKitchenOrder));
+      const [active, servedToday] = await Promise.all([
+        fetchOrders({ paymentStatus: ["succeeded"], fulfillmentStatus: ACTIVE_STATUSES }),
+        fetchOrders({ paymentStatus: ["succeeded"], fulfillmentStatus: ["served"], date: localDate() }),
+      ]);
+      setOrders([...active, ...servedToday].map(orderToKitchenOrder));
       setError(null);
     } catch (err) {
       console.error("โหลดออเดอร์ห้องครัวไม่สำเร็จ:", err);
@@ -124,32 +139,40 @@ export function KitchenOrdersProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     loadOrders();
     pollRef.current = setInterval(loadOrders, POLL_INTERVAL_MS);
+    const unsubscribe = subscribeToUpdates((update) => {
+      if (update.resource === "orders") void loadOrders();
+    });
     return () => {
       if (pollRef.current) clearInterval(pollRef.current);
+      unsubscribe();
     };
   }, [loadOrders]);
 
   const advance = useCallback(
-    (id: string) => {
-      setOrders((prev) => {
-        const order = prev.find((o) => o.id === id);
-        const next = order ? NEXT_STATUS[order.status] : null;
-        if (!order || !next) return prev;
-
-        // อัปเดต backend แบบ optimistic แล้วซิงค์รอบถัดไปจาก polling
-        updateOrderStatus(id, UI_TO_API_STATUS[next]).catch((err) => {
-          console.error("อัปเดตสถานะออเดอร์ไม่สำเร็จ:", err);
-          loadOrders();
+    async (id: string) => {
+      const order = orders.find((item) => item.id === id);
+      const next = order ? NEXT_STATUS[order.status] : null;
+      if (!order || !next || pendingOrderIds.has(id)) return false;
+      setPendingOrderIds((current) => new Set(current).add(id));
+      setError(null);
+      try {
+        const updated = await updateOrderStatus(id, UI_TO_API_STATUS[next]);
+        setOrders((current) => current.map((item) => item.id === id ? orderToKitchenOrder(updated) : item));
+        return true;
+      } catch (err) {
+        console.error("อัปเดตสถานะออเดอร์ไม่สำเร็จ:", err);
+        setError(err instanceof Error ? err.message : "อัปเดตสถานะออเดอร์ไม่สำเร็จ");
+        await loadOrders();
+        return false;
+      } finally {
+        setPendingOrderIds((current) => {
+          const nextIds = new Set(current);
+          nextIds.delete(id);
+          return nextIds;
         });
-
-        return prev.map((o) =>
-          o.id === id
-            ? { ...o, status: next, stepStartedMinutesAgo: 0, servedAt: next === "served" ? o.servedAt : o.servedAt }
-            : o,
-        );
-      });
+      }
     },
-    [loadOrders],
+    [loadOrders, orders, pendingOrderIds],
   );
 
   const counts = useMemo(() => {
@@ -165,7 +188,7 @@ export function KitchenOrdersProvider({ children }: { children: ReactNode }) {
     [orders],
   );
 
-  const value: KitchenOrdersContextValue = { orders, counts, byStatus, advance, loading, error };
+  const value: KitchenOrdersContextValue = { orders, counts, byStatus, advance, pendingOrderIds, loading, error };
 
   return <KitchenOrdersContext.Provider value={value}>{children}</KitchenOrdersContext.Provider>;
 }

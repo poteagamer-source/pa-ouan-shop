@@ -1,166 +1,127 @@
-import { useMemo } from "react";
-import { FileText, BellRing, Package, ChevronRight } from "lucide-react";
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
+import { AlertTriangle, BellRing, FileText, Package } from "lucide-react";
 import { PageHeader } from "../../components/staff/PageHeader";
 import { StatCard } from "../../components/staff/StatCard";
-import { salesOrders } from "../../data/mockData";
-import { images } from "../../data/images";
+import { fetchOrders, fetchSalesSummary, fetchStock, subscribeToUpdates } from "../../lib/api";
+import type { Order, SalesSummary, StockItem } from "../../types";
 
-const hourlySales = [
-  { time: "00:00", value: 0 },
-  { time: "04:00", value: 0 },
-  { time: "08:00", value: 3 },
-  { time: "12:00", value: 8 },
-  { time: "16:00", value: 15 },
-  { time: "20:00", value: 32 },
-  { time: "20:40", value: 35 },
-  { time: "24:00", value: 20 },
-];
+const statusMeta = {
+  queued: { label: "ออเดอร์เข้าใหม่", color: "text-red-500", bg: "bg-red-50", to: "/staff/kitchen/orders" },
+  cooking: { label: "กำลังทำอาหาร", color: "text-amber-500", bg: "bg-amber-50", to: "/staff/kitchen/cooking" },
+  ready: { label: "พร้อมเสิร์ฟ", color: "text-green-600", bg: "bg-green-50", to: "/staff/waiter" },
+  served: { label: "เสิร์ฟแล้ว", color: "text-blue-500", bg: "bg-blue-50", to: "/staff/waiter/served" },
+} as const;
 
-const orderStatusSummary = [
-  { label: "ออเดอร์เข้าใหม่", value: 2, color: "text-red-500", bg: "bg-red-50" },
-  { label: "กำลังทำอาหาร", value: 1, color: "text-amber-500", bg: "bg-amber-50" },
-  { label: "พร้อมเสิร์ฟ", value: 1, color: "text-green-500", bg: "bg-green-50" },
-  { label: "เสิร์ฟแล้ว", value: 1, color: "text-blue-500", bg: "bg-blue-50" },
-];
+function localDate(): string {
+  const now = new Date();
+  return new Date(now.getTime() - now.getTimezoneOffset() * 60_000).toISOString().slice(0, 10);
+}
 
-const bestSellers = [
-  { rank: 1, name: "บัวลอยนมสด", qty: 40, image: images.food.bualoy },
-  { rank: 2, name: "บัวลอยไข่เค็ม", qty: 50, image: images.food.bualoy },
-  { rank: 3, name: "บัวลอยชูเนา", qty: 60, image: images.food.bualoy },
-];
+function money(value: number, currency = "THB") {
+  return new Intl.NumberFormat("th-TH", { style: "currency", currency }).format(value);
+}
 
 export function ManagerDashboard() {
-  const latestOrders = useMemo(() => salesOrders.slice(0, 3), []);
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [stock, setStock] = useState<StockItem[]>([]);
+  const [summary, setSummary] = useState<SalesSummary | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    const today = localDate();
+    try {
+      const [orderData, stockData, salesData] = await Promise.all([
+        fetchOrders({ date: today }),
+        fetchStock(),
+        fetchSalesSummary({ from: today, to: today }),
+      ]);
+      setOrders(orderData);
+      setStock(stockData);
+      setSummary(salesData);
+      setError(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "โหลดภาพรวมร้านไม่สำเร็จ");
+    }
+  }, []);
+
+  useEffect(() => {
+    void load();
+    const unsubscribe = subscribeToUpdates((update) => {
+      if (["orders", "stock", "products"].includes(update.resource)) void load();
+    });
+    const timer = window.setInterval(load, 15_000);
+    return () => {
+      unsubscribe();
+      window.clearInterval(timer);
+    };
+  }, [load]);
+
+  const paidOrders = useMemo(() => orders.filter((order) => ["succeeded", "partially_refunded", "refunded"].includes(order.paymentStatus)), [orders]);
+  const counts = useMemo(() => ({
+    queued: paidOrders.filter((order) => order.fulfillmentStatus === "queued").length,
+    cooking: paidOrders.filter((order) => order.fulfillmentStatus === "cooking").length,
+    ready: paidOrders.filter((order) => order.fulfillmentStatus === "ready").length,
+    served: paidOrders.filter((order) => order.fulfillmentStatus === "served").length,
+  }), [paidOrders]);
+  const lowStock = stock.filter((item) => item.status === "low");
+  const latestOrders = paidOrders.slice(0, 5);
 
   return (
     <div className="max-w-6xl">
-      <PageHeader title="หน้าหลัก" subtitle="ภาพรวมการดำเนินงานของร้าน" />
+      <PageHeader title="หน้าหลัก" subtitle="ภาพรวม workflow ของร้านจากข้อมูลจริง" />
+      {error && (
+        <div className="mb-4 flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
+          <AlertTriangle className="h-4 w-4" /> {error}
+        </div>
+      )}
 
-      <div className="flex flex-wrap gap-4 mb-6">
-        <StatCard
-          icon={<FileText className="w-5 h-5" />}
-          iconBgClass="bg-red-50"
-          iconColorClass="text-red-500"
-          label="ยอดขายวันนี้"
-          value="฿ 1,000"
-          valueColorClass="text-red-500"
-          sublabel="จาก 100 ออเดอร์"
-        />
-        <StatCard
-          icon={<BellRing className="w-5 h-5" />}
-          iconBgClass="bg-green-50"
-          iconColorClass="text-green-500"
-          label="ออเดอร์วันนี้"
-          value="100"
-          valueColorClass="text-green-600"
-          sublabel="สำเร็จแล้ว 80 ออเดอร์"
-        />
-        <StatCard
-          icon={<Package className="w-5 h-5" />}
-          iconBgClass="bg-purple-50"
-          iconColorClass="text-purple-500"
-          label="สินค้าใกล้หมด"
-          value="6"
-          valueColorClass="text-purple-500"
-          sublabel="รายการ"
-        />
+      <div className="mb-6 flex flex-wrap gap-4">
+        <StatCard icon={<FileText className="h-5 w-5" />} iconBgClass="bg-red-50" iconColorClass="text-red-500" label="ยอดขายวันนี้" value={money(summary?.revenue ?? 0, summary?.currency)} valueColorClass="text-red-500" sublabel={`จาก ${summary?.orderCount ?? 0} ออเดอร์ที่ชำระแล้ว`} />
+        <StatCard icon={<BellRing className="h-5 w-5" />} iconBgClass="bg-green-50" iconColorClass="text-green-500" label="ออเดอร์วันนี้" value={String(paidOrders.length)} valueColorClass="text-green-600" sublabel={`เสิร์ฟแล้ว ${counts.served} ออเดอร์`} />
+        <StatCard icon={<Package className="h-5 w-5" />} iconBgClass="bg-purple-50" iconColorClass="text-purple-500" label="สินค้าใกล้หมด" value={String(lowStock.length)} valueColorClass="text-purple-500" sublabel="รายการ" />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6 mb-6">
-        <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
-          <div className="flex items-center justify-between mb-4">
-            <p className="text-sm font-semibold text-gray-700">ออเดอร์ล่าสุด</p>
-            <button type="button" className="text-xs text-brand font-medium">
-              ดูทั้งหมด
-            </button>
-          </div>
+      <div className="mb-6 rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
+        <p className="mb-4 text-sm font-semibold text-gray-700">สถานะงานวันนี้</p>
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          {(Object.keys(statusMeta) as (keyof typeof statusMeta)[]).map((key) => {
+            const meta = statusMeta[key];
+            return (
+              <Link key={key} to={meta.to} className={`rounded-xl p-4 text-center transition-transform hover:-translate-y-0.5 ${meta.bg}`}>
+                <p className={`text-2xl font-bold ${meta.color}`}>{counts[key]}</p>
+                <p className="mt-1 text-xs text-gray-600">{meta.label}</p>
+                <p className={`mt-2 text-[11px] font-medium ${meta.color}`}>เปิดรายการ</p>
+              </Link>
+            );
+          })}
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_300px]">
+        <div className="overflow-hidden rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
+          <p className="mb-4 text-sm font-semibold text-gray-700">ออเดอร์ล่าสุดที่ชำระแล้ว</p>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead>
-                <tr className="text-left text-gray-400 border-b border-gray-100">
-                  <th className="py-2 font-medium">Order ID</th>
-                  <th className="py-2 font-medium">โต๊ะ</th>
-                  <th className="py-2 font-medium">รายการ</th>
-                  <th className="py-2 font-medium">เวลาสั่งออเดอร์</th>
-                  <th className="py-2 font-medium">สถานะ</th>
-                </tr>
-              </thead>
+              <thead><tr className="border-b border-gray-100 text-left text-gray-400"><th className="py-2 font-medium">Order ID</th><th className="py-2 font-medium">โต๊ะ</th><th className="py-2 font-medium">รายการ</th><th className="py-2 font-medium">เวลา</th><th className="py-2 font-medium">สถานะ</th></tr></thead>
               <tbody>
-                {latestOrders.map((order) => (
-                  <tr key={order.id} className="border-b border-gray-50 last:border-0">
-                    <td className="py-3 text-gray-500">{order.id}</td>
-                    <td className="py-3 font-medium text-brand">{order.table}</td>
-                    <td className="py-3 text-gray-700 flex items-center gap-2">
-                      <img
-                        src={order.items[0]?.image}
-                        alt=""
-                        className="w-8 h-8 rounded-full object-cover"
-                      />
-                      {order.items[0]?.name} ({order.items[0]?.qty})
-                    </td>
-                    <td className="py-3 text-gray-500">{order.time}</td>
-                    <td className="py-3">
-                      <span className="inline-flex items-center rounded-full bg-green-100 text-green-600 text-xs font-medium px-3 py-1">
-                        เสิร์ฟแล้ว
-                      </span>
-                    </td>
-                  </tr>
-                ))}
+                {latestOrders.map((order) => {
+                  const meta = statusMeta[order.fulfillmentStatus as keyof typeof statusMeta];
+                  return <tr key={order.id} className="border-b border-gray-50 last:border-0"><td className="py-3 text-gray-500">{order.id}</td><td className="py-3 font-semibold text-brand">{order.table}</td><td className="max-w-[240px] truncate py-3 text-gray-700">{order.items.map((item) => `${item.name} ×${item.qty}`).join(", ")}</td><td className="py-3 text-gray-500">{order.time?.slice(0, 5)} น.</td><td className="py-3"><span className={`rounded-full px-2.5 py-1 text-xs font-medium ${meta?.bg ?? "bg-gray-100"} ${meta?.color ?? "text-gray-600"}`}>{meta?.label ?? order.fulfillmentStatus}</span></td></tr>;
+                })}
+                {latestOrders.length === 0 && <tr><td colSpan={5} className="py-10 text-center text-sm text-gray-400">ยังไม่มีออเดอร์ที่ชำระเงินวันนี้</td></tr>}
               </tbody>
             </table>
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
-          <p className="text-sm font-semibold text-gray-700 mb-3">ยอดขายแยกตามช่วงเวลา</p>
-          <ResponsiveContainer width="100%" height={160}>
-            <AreaChart data={hourlySales}>
-              <defs>
-                <linearGradient id="dashSalesFill" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#ff6600" stopOpacity={0.35} />
-                  <stop offset="100%" stopColor="#ff6600" stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-              <XAxis dataKey="time" tick={{ fontSize: 10 }} />
-              <YAxis tick={{ fontSize: 10 }} tickFormatter={(v) => `฿${v}`} />
-              <Tooltip formatter={(v: number) => [`฿${v}`, "ยอดขาย"]} />
-              <Area type="monotone" dataKey="value" stroke="#ff6600" strokeWidth={2} fill="url(#dashSalesFill)" />
-            </AreaChart>
-          </ResponsiveContainer>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6">
-        <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
-          <p className="text-sm font-semibold text-gray-700 mb-4">ออเดอร์ที่ต้องจัดการ</p>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            {orderStatusSummary.map((status) => (
-              <div key={status.label} className={`rounded-xl p-4 text-center ${status.bg}`}>
-                <p className={`text-xl font-bold ${status.color}`}>{status.value}</p>
-                <p className="text-xs text-gray-500 mt-1">{status.label}</p>
-                <button type="button" className={`text-[11px] font-medium mt-2 ${status.color}`}>
-                  ดูรายการ
-                </button>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
-          <p className="text-sm font-semibold text-gray-700 mb-4">สินค้าขายดี</p>
+        <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
+          <p className="mb-4 text-sm font-semibold text-gray-700">สินค้าขายดีวันนี้</p>
           <div className="space-y-3">
-            {bestSellers.map((item) => (
-              <div key={item.rank} className="flex items-center gap-3">
-                <span className="w-5 text-xs text-gray-400">{item.rank}</span>
-                <img src={item.image} alt={item.name} className="w-9 h-9 rounded-full object-cover" />
-                <p className="flex-1 text-sm text-gray-700">{item.name}</p>
-                <p className="text-sm font-semibold text-gray-700">{item.qty}</p>
-                <ChevronRight className="w-4 h-4 text-gray-300" />
-              </div>
-            ))}
+            {(summary?.topProducts ?? []).slice(0, 5).map((item, index) => <div key={item.name} className="flex items-center gap-3"><span className="w-5 text-xs text-gray-400">{index + 1}</span><p className="flex-1 text-sm text-gray-700">{item.name}</p><p className="text-sm font-semibold text-gray-700">{item.qty}</p></div>)}
+            {(summary?.topProducts.length ?? 0) === 0 && <p className="text-sm text-gray-400">ยังไม่มีข้อมูลยอดขาย</p>}
           </div>
+          {lowStock.length > 0 && <Link to="/staff/stock" className="mt-5 block rounded-xl bg-purple-50 p-3 text-xs font-medium text-purple-600">มีสินค้าใกล้หมด {lowStock.length} รายการ — ตรวจสอบสต๊อก</Link>}
         </div>
       </div>
     </div>

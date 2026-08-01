@@ -17,7 +17,7 @@ export const categoryMeta: Record<
   dessert: { label: "ขนมหวาน", text: "text-purple-500", bg: "bg-purple-50", border: "border-purple-400" },
 };
 
-/** สถานะออเดอร์ฝั่งครัว — "new" คือ order.status === "pending" ฝั่ง backend */
+/** สถานะออเดอร์ฝั่งครัว — "new" คือ fulfillmentStatus === "queued" */
 export type KitchenOrderStatus = "new" | "cooking" | "ready" | "served";
 
 export const kitchenStatusMeta: Record<

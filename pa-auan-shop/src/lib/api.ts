@@ -2,7 +2,9 @@ import type {
   CartItem,
   CategoryId,
   Order,
-  OrderStatus,
+  FulfillmentStatus,
+  Payment,
+  PaymentStatus,
   Product,
   SalesOrder,
   SalesSummary,
@@ -140,9 +142,19 @@ export function adjustStock(productId: string, delta: number): Promise<{ product
 
 /* ---------------------------------- orders -------------------------------- */
 
-export function fetchOrders(params?: { status?: OrderStatus[]; date?: string; table?: string }): Promise<Order[]> {
+export function fetchOrders(params?: {
+  paymentStatus?: PaymentStatus[];
+  fulfillmentStatus?: FulfillmentStatus[];
+  date?: string;
+  table?: string;
+}): Promise<Order[]> {
   return request(
-    `/orders${toQueryString({ status: params?.status?.join(","), date: params?.date, table: params?.table })}`,
+    `/orders${toQueryString({
+      paymentStatus: params?.paymentStatus?.join(","),
+      fulfillmentStatus: params?.fulfillmentStatus?.join(","),
+      date: params?.date,
+      table: params?.table,
+    })}`,
   );
 }
 
@@ -174,24 +186,32 @@ export function createOrder(payload: CreateOrderPayload): Promise<Order> {
   return request("/orders", { method: "POST", body: JSON.stringify(body) });
 }
 
-export function updateOrderStatus(id: string, status: OrderStatus): Promise<Order> {
-  return request(`/orders/${id}/status`, { method: "PATCH", body: JSON.stringify({ status }) });
+export function updateOrderStatus(id: string, fulfillmentStatus: FulfillmentStatus): Promise<Order> {
+  return request(`/orders/${id}/status`, { method: "PATCH", body: JSON.stringify({ fulfillmentStatus }) });
 }
 
-export function attachSlip(id: string, slipImage: string): Promise<Order> {
-  return request(`/orders/${id}/slip`, { method: "PATCH", body: JSON.stringify({ slipImage }) });
+export function createPaymentSession(
+  orderId: string,
+  payload: { provider: string; paymentMethod: string; returnPath: string },
+  idempotencyKey = crypto.randomUUID(),
+): Promise<Payment> {
+  return request(`/orders/${orderId}/payments`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "Idempotency-Key": idempotencyKey },
+    body: JSON.stringify(payload),
+  });
 }
 
-export function verifyPayment(id: string): Promise<Order> {
-  return request(`/orders/${id}/verify-payment`, { method: "PATCH" });
+export function fetchPayments(orderId: string): Promise<Payment[]> {
+  return request(`/orders/${orderId}/payments`);
 }
 
 /* ---------------------------------- sales --------------------------------- */
 
-export function fetchSales(params?: { from?: string; to?: string; table?: string }): Promise<SalesOrder[]> {
-  return request(`/sales${toQueryString({ from: params?.from, to: params?.to, table: params?.table })}`);
+export function fetchSales(params?: { from?: string; to?: string; table?: string; currency?: string }): Promise<SalesOrder[]> {
+  return request(`/sales${toQueryString({ from: params?.from, to: params?.to, table: params?.table, currency: params?.currency })}`);
 }
 
-export function fetchSalesSummary(params?: { from?: string; to?: string }): Promise<SalesSummary> {
-  return request(`/sales/summary${toQueryString({ from: params?.from, to: params?.to })}`);
+export function fetchSalesSummary(params?: { from?: string; to?: string; currency?: string }): Promise<SalesSummary> {
+  return request(`/sales/summary${toQueryString({ from: params?.from, to: params?.to, currency: params?.currency })}`);
 }

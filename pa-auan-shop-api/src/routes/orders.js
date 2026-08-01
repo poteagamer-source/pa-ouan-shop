@@ -74,6 +74,7 @@ async function fetchOrders(whereSql = "", params = []) {
     paymentVerified: row.payment_verified,
     paymentProvider: row.payment_provider,
     paidAt: row.paid_at,
+    stepStartedAt: row.step_started_at,
     servedAt: row.served_at,
     latestPayment: row.latest_payment,
     items: row.items,

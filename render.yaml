@@ -4,10 +4,24 @@ services:
     runtime: node
     plan: free
     buildCommand: npm --prefix pa-auan-shop-api install && npm --prefix pa-auan-shop install && npm --prefix pa-auan-shop run build
-    startCommand: npm --prefix pa-auan-shop-api start
+    startCommand: npm --prefix pa-auan-shop-api run db:migrate && npm --prefix pa-auan-shop-api start
     healthCheckPath: /api/health
     envVars:
       - key: NODE_VERSION
         value: 22
       - key: DATABASE_URL
+        sync: false
+      - key: PAYMENT_WEBHOOK_SECRET
+        generateValue: true
+      - key: GENERIC_WEBHOOK_SECRET
+        generateValue: true
+      - key: SHOP_CURRENCY
+        value: THB
+      - key: SHOP_CURRENCY_EXPONENT
+        value: 2
+      - key: PUBLIC_APP_URL
+        sync: false
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: STRIPE_WEBHOOK_SECRET
         sync: false

@@ -47,16 +47,16 @@ export function StaffSidebar({ variant }: Props) {
     variant === "manager" ? managerLinks : variant === "kitchen" ? kitchenSubLinks : waiterSubLinks;
 
   return (
-    <aside className="w-60 shrink-0 bg-white border-r border-gray-200 min-h-dvh py-6 px-4">
+    <aside className="min-h-dvh w-20 shrink-0 border-r border-gray-200 bg-white px-2 py-4 md:w-60 md:px-4 md:py-6">
       <div className="flex items-center gap-2 mb-6 px-1">
         <span className="flex h-9 w-9 items-center justify-center rounded-full bg-brand-light text-brand shrink-0">
           <ChefHat className="w-5 h-5" />
         </span>
-        <h1 className="text-base font-bold text-brand leading-tight">{SHOP_SHORT}</h1>
+        <h1 className="hidden text-base font-bold leading-tight text-brand md:block">{SHOP_SHORT}</h1>
       </div>
 
       {variant === "manager" && (
-        <p className="px-1 mb-3 text-sm font-bold text-gray-800">จัดการร้านค้า</p>
+        <p className="mb-3 hidden px-1 text-sm font-bold text-gray-800 md:block">จัดการร้านค้า</p>
       )}
 
       {(variant === "kitchen" || variant === "waiter") && (
@@ -65,6 +65,7 @@ export function StaffSidebar({ variant }: Props) {
             <NavLink
               key={to}
               to={to}
+              title={label}
               className={({ isActive }) =>
                 `flex-1 flex flex-col items-center gap-1 rounded-xl px-2 py-2 text-[11px] font-medium transition-colors ${
                   isActive ? "bg-brand-light text-brand" : "text-gray-400 hover:bg-gray-50"
@@ -72,17 +73,17 @@ export function StaffSidebar({ variant }: Props) {
               }
             >
               <Icon className="w-4 h-4" />
-              {label}
+              <span className="hidden md:inline">{label}</span>
             </NavLink>
           ))}
         </div>
       )}
 
       {variant === "kitchen" && (
-        <p className="px-1 mb-3 text-sm font-bold text-gray-800">ห้องครัว</p>
+        <p className="mb-3 hidden px-1 text-sm font-bold text-gray-800 md:block">ห้องครัว</p>
       )}
       {variant === "waiter" && (
-        <p className="px-1 mb-3 text-sm font-bold text-gray-800">หน้าจอพนักงานเสิร์ฟ</p>
+        <p className="mb-3 hidden px-1 text-sm font-bold text-gray-800 md:block">หน้าจอพนักงานเสิร์ฟ</p>
       )}
 
       <nav className="space-y-1">
@@ -91,6 +92,7 @@ export function StaffSidebar({ variant }: Props) {
             key={to}
             to={to}
             end={end}
+            title={label}
             className={({ isActive }) =>
               `flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors ${
                 isActive
@@ -100,7 +102,7 @@ export function StaffSidebar({ variant }: Props) {
             }
           >
             <Icon className="w-5 h-5 shrink-0" />
-            {label}
+            <span className="hidden md:inline">{label}</span>
           </NavLink>
         ))}
       </nav>

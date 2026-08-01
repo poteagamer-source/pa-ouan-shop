@@ -12,9 +12,9 @@ function ColumnOrderCard({
   onAction,
 }: {
   order: KitchenOrder;
-  actionLabel: string;
-  actionClass: string;
-  onAction: () => void;
+  actionLabel?: string;
+  actionClass?: string;
+  onAction?: () => void;
 }) {
   return (
     <div className="rounded-xl bg-gray-50 border border-gray-100 p-3 mb-3">
@@ -34,13 +34,15 @@ function ColumnOrderCard({
       ))}
       <p className="text-sky-500 text-[11px] mb-2">{order.note}</p>
       <p className="text-sm font-bold text-gray-800 mb-2">รวม ฿ {order.total.toFixed(2)}</p>
-      <button
-        type="button"
-        onClick={onAction}
-        className={`w-full rounded-lg py-2 text-xs font-medium text-white transition-colors ${actionClass}`}
-      >
-        {actionLabel}
-      </button>
+      {actionLabel && onAction && (
+        <button
+          type="button"
+          onClick={onAction}
+          className={`w-full rounded-lg py-2 text-xs font-medium text-white transition-colors ${actionClass}`}
+        >
+          {actionLabel}
+        </button>
+      )}
     </div>
   );
 }
@@ -100,13 +102,7 @@ export function KitchenHomePage() {
           </h2>
           {readyOrders.length === 0 && <p className="text-xs text-gray-400">ไม่มีออเดอร์ที่พร้อมเสิร์ฟ</p>}
           {readyOrders.map((order) => (
-            <ColumnOrderCard
-              key={order.id}
-              order={order}
-              actionLabel="เสิร์ฟแล้ว"
-              actionClass="bg-green-500 hover:bg-green-600"
-              onAction={() => advance(order.id)}
-            />
+            <ColumnOrderCard key={order.id} order={order} />
           ))}
         </div>
       </div>

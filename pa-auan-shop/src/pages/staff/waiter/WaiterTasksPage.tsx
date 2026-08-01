@@ -6,7 +6,7 @@ import { WaiterTaskCard } from "../../../components/staff/kitchen/WaiterTaskCard
 import { useKitchenOrders } from "../../../context/KitchenOrdersContext";
 
 export function WaiterTasksPage() {
-  const { counts, byStatus, advance } = useKitchenOrders();
+  const { counts, byStatus, advance, pendingOrderIds, error } = useKitchenOrders();
   const readyOrders = byStatus("ready");
   const servedOrders = byStatus("served");
   const recentServed = servedOrders.slice(0, 3);
@@ -45,13 +45,14 @@ export function WaiterTasksPage() {
             <SortDropdown />
           </div>
           <p className="text-xs text-gray-400 mb-4">
-            เมื่อเสิร์ฟเสร็จแล้ว กรุณากดปุ่มยืนยันเมื่อออเดอร์ให้อัปเดตสถานะ
+            ตรวจสอบเลขโต๊ะ นำอาหารไปเสิร์ฟ แล้วจึงกดยืนยันว่าเสิร์ฟแล้ว
           </p>
+          {error && <p className="mb-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">{error}</p>}
           {readyOrders.length === 0 ? (
             <p className="text-sm text-gray-400 text-center py-10">ไม่มีงานที่ต้องเสิร์ฟในขณะนี้</p>
           ) : (
             readyOrders.map((order) => (
-              <WaiterTaskCard key={order.id} order={order} onServe={advance} />
+              <WaiterTaskCard key={order.id} order={order} onServe={advance} busy={pendingOrderIds.has(order.id)} />
             ))
           )}
         </div>
@@ -98,7 +99,7 @@ export function WaiterTasksPage() {
 
       <div className="rounded-2xl bg-white border border-gray-100 shadow-sm p-4">
         <p className="text-sm font-semibold text-gray-700 mb-3">รายการที่รับแล้ว</p>
-        <table className="w-full text-xs">
+        <div className="overflow-x-auto"><table className="min-w-[640px] w-full text-xs">
           <thead>
             <tr className="text-left text-gray-400 border-b border-gray-100">
               <th className="pb-2 font-medium">Order ID</th>
@@ -123,7 +124,7 @@ export function WaiterTasksPage() {
               </tr>
             ))}
           </tbody>
-        </table>
+        </table></div>
         <button
           type="button"
           className="w-full mt-3 rounded-lg border border-gray-200 py-2 text-xs text-gray-500 hover:bg-gray-50 transition-colors"

@@ -33,7 +33,42 @@ export interface CartItem {
   toppings: { id: string; name: string; price: number }[];
 }
 
-export type OrderStatus = "pending" | "cooking" | "ready" | "served" | "paid";
+export type PaymentStatus =
+  | "pending"
+  | "processing"
+  | "succeeded"
+  | "failed"
+  | "cancelled"
+  | "partially_refunded"
+  | "refunded";
+
+export type FulfillmentStatus = "not_started" | "queued" | "cooking" | "ready" | "served" | "cancelled";
+
+export type PaymentAttemptStatus =
+  | "created"
+  | "pending"
+  | "requires_action"
+  | "processing"
+  | "succeeded"
+  | "failed"
+  | "cancelled"
+  | "partially_refunded"
+  | "refunded";
+
+export interface Payment {
+  id: string;
+  orderId: string;
+  provider: string;
+  providerPaymentId?: string | null;
+  paymentMethod?: string | null;
+  status: PaymentAttemptStatus;
+  amountMinor: number;
+  refundedAmountMinor: number;
+  currency: string;
+  checkoutUrl?: string | null;
+  failureCode?: string | null;
+  failureMessage?: string | null;
+}
 
 /** รายการสินค้า 1 บรรทัดตามที่ backend ส่งกลับมาใน order */
 export interface OrderItem {
@@ -56,10 +91,18 @@ export interface Order {
   time: string;
   items: OrderItem[];
   total: number;
-  status: OrderStatus;
+  amountMinor: number;
+  currency: string;
+  currencyExponent: number;
+  paymentStatus: PaymentStatus;
+  fulfillmentStatus: FulfillmentStatus;
+  latestPayment?: Payment | null;
   note?: "เย็น" | "ร้อน" | null;
   paid?: boolean;
   paymentVerified?: boolean;
+  paymentProvider?: string | null;
+  paidAt?: string | null;
+  stepStartedAt?: string | null;
   slipImage?: string | null;
   servedAt?: string | null;
 }
@@ -84,6 +127,8 @@ export interface SalesOrder {
   id: string;
   table: string;
   total: number;
+  amountMinor: number;
+  currency: string;
   date: string;
   time: string;
   paymentVerified: boolean;
@@ -92,6 +137,7 @@ export interface SalesOrder {
 }
 
 export interface SalesSummary {
+  currency: string;
   revenue: number;
   orderCount: number;
   byDay: { date: string; revenue: number; orderCount: number }[];

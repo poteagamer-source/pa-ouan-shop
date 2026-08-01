@@ -3,10 +3,11 @@ import type { KitchenOrder } from "../../../context/KitchenOrdersContext";
 
 interface CookingOrderCardProps {
   order: KitchenOrder;
-  onAdvance: (id: string) => void;
+  onAdvance: (id: string) => Promise<boolean>;
+  busy?: boolean;
 }
 
-export function CookingOrderCard({ order, onAdvance }: CookingOrderCardProps) {
+export function CookingOrderCard({ order, onAdvance, busy = false }: CookingOrderCardProps) {
   return (
     <div className="rounded-2xl border border-amber-200 bg-white p-5 shadow-sm mb-4 max-w-xl">
       <div className="flex items-start justify-between mb-4">
@@ -45,11 +46,12 @@ export function CookingOrderCard({ order, onAdvance }: CookingOrderCardProps) {
 
       <button
         type="button"
-        onClick={() => onAdvance(order.id)}
-        className="w-full flex items-center justify-center gap-2 rounded-xl bg-amber-500 py-3 text-sm font-medium text-white hover:bg-amber-600 transition-colors"
+        onClick={() => void onAdvance(order.id)}
+        disabled={busy}
+        className="w-full flex items-center justify-center gap-2 rounded-xl bg-amber-500 py-3 text-sm font-medium text-white hover:bg-amber-600 transition-colors disabled:cursor-wait disabled:opacity-50"
       >
         <CheckCircle2 className="w-4 h-4" />
-        เสร็จแล้ว / พร้อมเสิร์ฟ
+        {busy ? "กำลังอัปเดต..." : "ทำเสร็จแล้ว / แจ้งพนักงานเสิร์ฟ"}
       </button>
     </div>
   );

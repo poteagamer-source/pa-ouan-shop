@@ -36,7 +36,7 @@ export function WaiterServedPage() {
           <div className="flex items-center justify-between mb-3">
             <p className="text-sm font-semibold text-gray-700">รายการเสิร์ฟแล้ว ({servedOrders.length})</p>
           </div>
-          <table className="w-full text-xs">
+          <div className="overflow-x-auto"><table className="min-w-[640px] w-full text-xs">
             <thead>
               <tr className="text-left text-gray-400 border-b border-gray-100">
                 <th className="pb-2 font-medium">ออเดอร์</th>
@@ -73,7 +73,7 @@ export function WaiterServedPage() {
                 </tr>
               ))}
             </tbody>
-          </table>
+          </table></div>
         </div>
 
         <div className="space-y-4">

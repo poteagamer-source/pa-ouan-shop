@@ -3,10 +3,11 @@ import type { KitchenOrder } from "../../../context/KitchenOrdersContext";
 
 interface WaiterTaskCardProps {
   order: KitchenOrder;
-  onServe: (id: string) => void;
+  onServe: (id: string) => Promise<boolean>;
+  busy?: boolean;
 }
 
-export function WaiterTaskCard({ order, onServe }: WaiterTaskCardProps) {
+export function WaiterTaskCard({ order, onServe, busy = false }: WaiterTaskCardProps) {
   const firstItem = order.items[0];
   return (
     <div className="rounded-2xl border border-green-200 bg-white p-5 shadow-sm mb-4">
@@ -37,10 +38,11 @@ export function WaiterTaskCard({ order, onServe }: WaiterTaskCardProps) {
 
         <button
           type="button"
-          onClick={() => onServe(order.id)}
-          className="rounded-xl bg-green-500 px-5 py-2.5 text-sm font-medium text-white hover:bg-green-600 transition-colors shrink-0"
+          onClick={() => void onServe(order.id)}
+          disabled={busy}
+          className="rounded-xl bg-green-500 px-5 py-2.5 text-sm font-medium text-white hover:bg-green-600 transition-colors shrink-0 disabled:cursor-wait disabled:opacity-50"
         >
-          เสร็จสิ้น
+          {busy ? "กำลังยืนยัน..." : "ยืนยันว่าเสิร์ฟแล้ว"}
         </button>
       </div>
 

@@ -5,7 +5,7 @@ import { NewOrderCard } from "../../../components/staff/kitchen/NewOrderCard";
 import { useKitchenOrders } from "../../../context/KitchenOrdersContext";
 
 export function KitchenOrdersPage() {
-  const { counts, byStatus, advance } = useKitchenOrders();
+  const { counts, byStatus, advance, pendingOrderIds, error } = useKitchenOrders();
   const newOrders = byStatus("new");
 
   return (
@@ -21,11 +21,12 @@ export function KitchenOrdersPage() {
       <div className="flex justify-end mb-4">
         <SortDropdown />
       </div>
+      {error && <p className="mb-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">{error}</p>}
 
       {newOrders.length === 0 ? (
         <p className="text-sm text-gray-400 text-center py-10">ไม่มีออเดอร์ใหม่ในขณะนี้</p>
       ) : (
-        newOrders.map((order) => <NewOrderCard key={order.id} order={order} onAdvance={advance} />)
+        newOrders.map((order) => <NewOrderCard key={order.id} order={order} onAdvance={advance} busy={pendingOrderIds.has(order.id)} />)
       )}
     </div>
   );
