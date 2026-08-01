@@ -1,9 +1,54 @@
 import { Router } from "express";
-import { createSession, clearSessionCookie, revokeSession, sessionCookie, verifyPassword } from "../auth.js";
-import { query } from "../db.js";
+import { createSession, clearSessionCookie, hashPassword, revokeSession, sessionCookie, verifyPassword } from "../auth.js";
+import { pool, query } from "../db.js";
 
 const router = Router();
 const attempts = new Map();
+
+function validUsername(username) {
+  return /^[a-z0-9._-]{3,50}$/.test(username);
+}
+
+router.get("/setup-status", async (_req, res, next) => {
+  try {
+    const { rows } = await query("SELECT NOT EXISTS (SELECT 1 FROM staff_users) AS setup_required");
+    res.json({ setupRequired: rows[0].setup_required });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.post("/setup", async (req, res, next) => {
+  const client = await pool.connect();
+  try {
+    const username = String(req.body?.username ?? "").trim().toLowerCase();
+    const displayName = String(req.body?.displayName ?? "").trim();
+    const password = String(req.body?.password ?? "");
+    if (!validUsername(username) || displayName.length < 2) return res.status(400).json({ error: "ชื่อผู้ใช้หรือชื่อที่แสดงไม่ถูกต้อง" });
+    const passwordHash = await hashPassword(password);
+    await client.query("BEGIN");
+    await client.query("SELECT pg_advisory_xact_lock(hashtext('pa-auan-staff-first-setup'))");
+    const existing = await client.query("SELECT 1 FROM staff_users LIMIT 1");
+    if (existing.rowCount) {
+      await client.query("ROLLBACK");
+      return res.status(409).json({ error: "ระบบถูกตั้งค่าแล้ว กรุณาเข้าสู่ระบบ" });
+    }
+    const { rows } = await client.query(
+      `INSERT INTO staff_users (username, display_name, role, password_hash)
+       VALUES ($1,$2,'manager',$3) RETURNING id, username, display_name, role`,
+      [username, displayName, passwordHash],
+    );
+    await client.query("COMMIT");
+    const token = await createSession(rows[0].id);
+    res.setHeader("Set-Cookie", sessionCookie(token));
+    res.status(201).json({ id: rows[0].id, username: rows[0].username, displayName: rows[0].display_name, role: rows[0].role });
+  } catch (error) {
+    try { await client.query("ROLLBACK"); } catch { /* transaction may not have started */ }
+    next(error);
+  } finally {
+    client.release();
+  }
+});
 
 function blocked(key) {
   const now = Date.now();

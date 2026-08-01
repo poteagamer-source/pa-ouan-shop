@@ -14,6 +14,7 @@ import salesRouter from "./routes/sales.js";
 import paymentsRouter from "./routes/payments.js";
 import webhooksRouter from "./routes/webhooks.js";
 import authRouter from "./routes/auth.js";
+import staffUsersRouter from "./routes/staff-users.js";
 import { realtimeRouter } from "./realtime.js";
 import { optionalAuth, requireRole } from "./auth.js";
 
@@ -39,6 +40,7 @@ app.use(
 
 app.get("/api/health", (_req, res) => res.json({ ok: true }));
 app.use("/api/auth", authRouter);
+app.use("/api/staff-users", staffUsersRouter);
 
 app.use("/api/categories", categoriesRouter);
 app.use("/api/products", productsRouter);

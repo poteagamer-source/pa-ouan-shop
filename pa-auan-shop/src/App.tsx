@@ -25,6 +25,7 @@ import { PurchaseOrdersPage } from "./pages/staff/PurchaseOrdersPage";
 import { StockPage } from "./pages/staff/StockPage";
 import { SalesReportPage } from "./pages/staff/SalesReportPage";
 import { StaffRouteGuard } from "./components/staff/StaffRouteGuard";
+import { StaffManagementPage } from "./pages/staff/StaffManagementPage";
 
 /** เดิม — redirect ไปหน้าแรก (ต้องสแกน QR) */
 function LegacyCustomerRedirect() {
@@ -60,6 +61,7 @@ export default function App() {
               <Route path="stock" element={<StockPage />} />
               <Route path="report" element={<SalesReportPage />} />
               <Route path="qr-codes" element={<QrCodesPage />} />
+              <Route path="users" element={<StaffManagementPage />} />
             </Route>
           </Route>
 

@@ -23,6 +23,7 @@ export interface RealtimeUpdate {
 
 export type StaffRole = "manager" | "kitchen" | "waiter";
 export interface StaffUser { id: number; username: string; displayName: string; role: StaffRole }
+export interface ManagedStaffUser extends StaffUser { active: boolean; createdAt: string }
 
 /** Subscribe to server-side changes. Returns a cleanup function. */
 export function subscribeToUpdates(onUpdate: (update: RealtimeUpdate) => void): () => void {
@@ -71,12 +72,28 @@ export function loginStaff(username: string, password: string): Promise<StaffUse
   return request("/auth/login", { method: "POST", body: JSON.stringify({ username, password }) });
 }
 
+export function fetchSetupStatus(): Promise<{ setupRequired: boolean }> {
+  return request("/auth/setup-status");
+}
+
+export function setupFirstManager(payload: { username: string; displayName: string; password: string }): Promise<StaffUser> {
+  return request("/auth/setup", { method: "POST", body: JSON.stringify(payload) });
+}
+
 export function fetchCurrentStaff(): Promise<StaffUser> {
   return request("/auth/me");
 }
 
 export function logoutStaff(): Promise<void> {
   return request("/auth/logout", { method: "POST" });
+}
+
+export function fetchStaffUsers(): Promise<ManagedStaffUser[]> { return request("/staff-users"); }
+export function createStaffUser(payload: { username: string; displayName: string; password: string; role: StaffRole }): Promise<ManagedStaffUser> {
+  return request("/staff-users", { method: "POST", body: JSON.stringify(payload) });
+}
+export function updateStaffUser(id: number, payload: Partial<{ displayName: string; password: string; role: StaffRole; active: boolean }>): Promise<ManagedStaffUser> {
+  return request(`/staff-users/${id}`, { method: "PATCH", body: JSON.stringify(payload) });
 }
 
 function toQueryString(params: Record<string, string | number | boolean | undefined>): string {

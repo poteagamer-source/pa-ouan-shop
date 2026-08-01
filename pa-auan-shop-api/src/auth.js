@@ -83,20 +83,3 @@ export function requireRole(...roles) {
     next();
   };
 }
-
-export async function bootstrapStaffUsers(client) {
-  const definitions = [
-    ["manager", process.env.INITIAL_MANAGER_USERNAME ?? "manager", process.env.INITIAL_MANAGER_PASSWORD, "ผู้จัดการ"],
-    ["kitchen", process.env.INITIAL_KITCHEN_USERNAME ?? "kitchen", process.env.INITIAL_KITCHEN_PASSWORD, "พนักงานครัว"],
-    ["waiter", process.env.INITIAL_WAITER_USERNAME ?? "waiter", process.env.INITIAL_WAITER_PASSWORD, "พนักงานเสิร์ฟ"],
-  ];
-  for (const [role, username, password, displayName] of definitions) {
-    if (!password) continue;
-    const passwordHash = await hashPassword(password);
-    await client.query(
-      `INSERT INTO staff_users (username, display_name, role, password_hash)
-       VALUES ($1,$2,$3,$4) ON CONFLICT (username) DO NOTHING`,
-      [username.toLowerCase(), displayName, role, passwordHash],
-    );
-  }
-}

@@ -25,11 +25,5 @@ services:
         sync: false
       - key: STRIPE_WEBHOOK_SECRET
         sync: false
-      - key: INITIAL_MANAGER_PASSWORD
-        sync: false
-      - key: INITIAL_KITCHEN_PASSWORD
-        sync: false
-      - key: INITIAL_WAITER_PASSWORD
-        sync: false
       - key: STAFF_SESSION_HOURS
         value: 12

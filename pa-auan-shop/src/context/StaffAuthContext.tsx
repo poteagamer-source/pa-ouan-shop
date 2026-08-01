@@ -1,10 +1,11 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
-import { ApiError, fetchCurrentStaff, loginStaff, logoutStaff, type StaffRole, type StaffUser } from "../lib/api";
+import { ApiError, fetchCurrentStaff, loginStaff, logoutStaff, setupFirstManager, type StaffRole, type StaffUser } from "../lib/api";
 
 interface StaffAuthValue {
   user: StaffUser | null;
   loading: boolean;
   login: (username: string, password: string) => Promise<StaffUser>;
+  setup: (payload: { username: string; displayName: string; password: string }) => Promise<StaffUser>;
   logout: () => Promise<void>;
   homeForRole: (role: StaffRole) => string;
 }
@@ -41,7 +42,13 @@ export function StaffAuthProvider({ children }: { children: ReactNode }) {
     try { await logoutStaff(); } finally { setUser(null); }
   }, []);
 
-  const value = useMemo(() => ({ user, loading, login, logout, homeForRole }), [user, loading, login, logout]);
+  const setup = useCallback(async (payload: { username: string; displayName: string; password: string }) => {
+    const authenticated = await setupFirstManager(payload);
+    setUser(authenticated);
+    return authenticated;
+  }, []);
+
+  const value = useMemo(() => ({ user, loading, login, setup, logout, homeForRole }), [user, loading, login, setup, logout]);
   return <StaffAuthContext.Provider value={value}>{children}</StaffAuthContext.Provider>;
 }
 
