@@ -35,6 +35,26 @@ CREATE TABLE IF NOT EXISTS stock (
   updated_at timestamptz NOT NULL DEFAULT now()
 );
 
+CREATE TABLE IF NOT EXISTS staff_users (
+  id            bigserial PRIMARY KEY,
+  username      text NOT NULL UNIQUE,
+  display_name  text NOT NULL,
+  role          text NOT NULL CHECK (role IN ('manager','kitchen','waiter')),
+  password_hash text NOT NULL,
+  active        boolean NOT NULL DEFAULT true,
+  created_at    timestamptz NOT NULL DEFAULT now(),
+  updated_at    timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS staff_sessions (
+  token_hash text PRIMARY KEY,
+  user_id    bigint NOT NULL REFERENCES staff_users(id) ON DELETE CASCADE,
+  expires_at timestamptz NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_staff_sessions_user ON staff_sessions(user_id);
+CREATE INDEX IF NOT EXISTS idx_staff_sessions_expiry ON staff_sessions(expires_at);
+
 -- `status` is retained as a legacy column during migration. New code uses
 -- payment_status and fulfillment_status independently.
 CREATE TABLE IF NOT EXISTS orders (

@@ -2,6 +2,7 @@ import { Router } from "express";
 import { pool, query } from "../db.js";
 import { decimalToMinor, minorToNumber, serializeMinor, shopCurrency } from "../payments/money.js";
 import { publishUpdate } from "../realtime.js";
+import { requireRole } from "../auth.js";
 
 const router = Router();
 const PAYMENT_STATUSES = ["pending", "processing", "succeeded", "failed", "cancelled", "partially_refunded", "refunded"];
@@ -81,7 +82,7 @@ async function fetchOrders(whereSql = "", params = []) {
   }));
 }
 
-router.get("/", async (req, res, next) => {
+router.get("/", requireRole("manager", "kitchen", "waiter"), async (req, res, next) => {
   try {
     const { paymentStatus, fulfillmentStatus, status, date, table } = req.query;
     const requestedPayment = paymentStatus ? String(paymentStatus).split(",").map((value) => value.trim()) : [];
@@ -224,12 +225,14 @@ router.post("/", async (req, res, next) => {
   }
 });
 
-router.patch("/:id/status", async (req, res, next) => {
+router.patch("/:id/status", requireRole("manager", "kitchen", "waiter"), async (req, res, next) => {
   try {
     const fulfillmentStatus = req.body?.fulfillmentStatus ?? req.body?.status;
     if (!FULFILLMENT_STATUSES.includes(fulfillmentStatus)) {
       return res.status(400).json({ error: "สถานะการจัดเตรียมไม่ถูกต้อง" });
     }
+    const allowedTargets = req.staffUser.role === "waiter" ? ["served"] : req.staffUser.role === "kitchen" ? ["cooking", "ready"] : ["cooking", "ready", "served"];
+    if (!allowedTargets.includes(fulfillmentStatus)) return res.status(403).json({ error: "role นี้ไม่มีสิทธิ์เปลี่ยนเป็นสถานะดังกล่าว" });
     const { rows } = await query(
       `UPDATE orders
        SET fulfillment_status = $2, status = $2, step_started_at = now(),

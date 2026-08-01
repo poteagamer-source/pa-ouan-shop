@@ -21,9 +21,12 @@ export interface RealtimeUpdate {
   at: string;
 }
 
+export type StaffRole = "manager" | "kitchen" | "waiter";
+export interface StaffUser { id: number; username: string; displayName: string; role: StaffRole }
+
 /** Subscribe to server-side changes. Returns a cleanup function. */
 export function subscribeToUpdates(onUpdate: (update: RealtimeUpdate) => void): () => void {
-  const source = new EventSource(`${BASE_URL}/events`);
+  const source = new EventSource(`${BASE_URL}/events`, { withCredentials: true });
   source.addEventListener("update", (event) => {
     try {
       onUpdate(JSON.parse((event as MessageEvent<string>).data) as RealtimeUpdate);
@@ -44,6 +47,7 @@ export class ApiError extends Error {
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
   const res = await fetch(`${BASE_URL}${path}`, {
+    credentials: "include",
     headers: { "Content-Type": "application/json" },
     ...options,
   });
@@ -61,6 +65,18 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
 
   if (res.status === 204) return undefined as T;
   return res.json() as Promise<T>;
+}
+
+export function loginStaff(username: string, password: string): Promise<StaffUser> {
+  return request("/auth/login", { method: "POST", body: JSON.stringify({ username, password }) });
+}
+
+export function fetchCurrentStaff(): Promise<StaffUser> {
+  return request("/auth/me");
+}
+
+export function logoutStaff(): Promise<void> {
+  return request("/auth/logout", { method: "POST" });
 }
 
 function toQueryString(params: Record<string, string | number | boolean | undefined>): string {

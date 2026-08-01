@@ -24,6 +24,7 @@ import { QrCodesPage } from "./pages/staff/QrCodesPage";
 import { PurchaseOrdersPage } from "./pages/staff/PurchaseOrdersPage";
 import { StockPage } from "./pages/staff/StockPage";
 import { SalesReportPage } from "./pages/staff/SalesReportPage";
+import { StaffRouteGuard } from "./components/staff/StaffRouteGuard";
 
 /** เดิม — redirect ไปหน้าแรก (ต้องสแกน QR) */
 function LegacyCustomerRedirect() {
@@ -51,13 +52,15 @@ export default function App() {
           {/* QR พนักงาน — แยกจากลูกค้า */}
           <Route path="/staff-entry" element={<StaffQrEntry />} />
 
-          <Route path="/staff" element={<StaffLayout variant="manager" />}>
-            <Route index element={<ManagerDashboard />} />
-            <Route path="menu" element={<MenuManagement />} />
-            <Route path="purchase-orders" element={<PurchaseOrdersPage />} />
-            <Route path="stock" element={<StockPage />} />
-            <Route path="report" element={<SalesReportPage />} />
-            <Route path="qr-codes" element={<QrCodesPage />} />
+          <Route element={<StaffRouteGuard allowed={["manager"]} />}>
+            <Route path="/staff" element={<StaffLayout variant="manager" />}>
+              <Route index element={<ManagerDashboard />} />
+              <Route path="menu" element={<MenuManagement />} />
+              <Route path="purchase-orders" element={<PurchaseOrdersPage />} />
+              <Route path="stock" element={<StockPage />} />
+              <Route path="report" element={<SalesReportPage />} />
+              <Route path="qr-codes" element={<QrCodesPage />} />
+            </Route>
           </Route>
 
           <Route
@@ -67,15 +70,19 @@ export default function App() {
               </KitchenOrdersProvider>
             }
           >
-            <Route path="/staff/kitchen" element={<StaffLayout variant="kitchen" showSearch={false} />}>
-              <Route index element={<KitchenHomePage />} />
-              <Route path="orders" element={<KitchenOrdersPage />} />
-              <Route path="cooking" element={<KitchenCookingPage />} />
-              <Route path="ready" element={<KitchenReadyPage />} />
+            <Route element={<StaffRouteGuard allowed={["manager", "kitchen"]} />}>
+              <Route path="/staff/kitchen" element={<StaffLayout variant="kitchen" showSearch={false} />}>
+                <Route index element={<KitchenHomePage />} />
+                <Route path="orders" element={<KitchenOrdersPage />} />
+                <Route path="cooking" element={<KitchenCookingPage />} />
+                <Route path="ready" element={<KitchenReadyPage />} />
+              </Route>
             </Route>
-            <Route path="/staff/waiter" element={<StaffLayout variant="waiter" showSearch={false} />}>
-              <Route index element={<WaiterTasksPage />} />
-              <Route path="served" element={<WaiterServedPage />} />
+            <Route element={<StaffRouteGuard allowed={["manager", "waiter"]} />}>
+              <Route path="/staff/waiter" element={<StaffLayout variant="waiter" showSearch={false} />}>
+                <Route index element={<WaiterTasksPage />} />
+                <Route path="served" element={<WaiterServedPage />} />
+              </Route>
             </Route>
           </Route>
 

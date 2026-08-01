@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import { pool } from "./db.js";
+import { bootstrapStaffUsers } from "./auth.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -12,6 +13,7 @@ async function main() {
   try {
     await client.query("BEGIN");
     await client.query(sql);
+    await bootstrapStaffUsers(client);
     await client.query("COMMIT");
     console.log("✅ สร้างตารางเรียบร้อย");
   } catch (error) {

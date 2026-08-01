@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { pool, query } from "../db.js";
 import { publishUpdate } from "../realtime.js";
+import { requireRole } from "../auth.js";
 
 const router = Router();
 
@@ -54,7 +55,7 @@ router.get("/:id", async (req, res, next) => {
 });
 
 // POST /api/products  (สร้างเมนูใหม่ — ใช้จากหน้าจัดการเมนู)
-router.post("/", async (req, res, next) => {
+router.post("/", requireRole("manager"), async (req, res, next) => {
   try {
     const { id, name, price, category, image, bestseller = false, recommended = false } = req.body;
     if (!name || price === undefined || !category) {
@@ -81,7 +82,7 @@ router.post("/", async (req, res, next) => {
 });
 
 // PUT /api/products/:id
-router.put("/:id", async (req, res, next) => {
+router.put("/:id", requireRole("manager"), async (req, res, next) => {
   try {
     const { name, price, category, image, bestseller, recommended, active } = req.body;
     const { rows } = await query(
@@ -105,7 +106,7 @@ router.put("/:id", async (req, res, next) => {
 });
 
 // DELETE /api/products/:id
-router.delete("/:id", async (req, res, next) => {
+router.delete("/:id", requireRole("manager"), async (req, res, next) => {
   const client = await pool.connect();
   try {
     await client.query("BEGIN");

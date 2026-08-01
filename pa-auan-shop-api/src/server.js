@@ -13,7 +13,9 @@ import ordersRouter from "./routes/orders.js";
 import salesRouter from "./routes/sales.js";
 import paymentsRouter from "./routes/payments.js";
 import webhooksRouter from "./routes/webhooks.js";
+import authRouter from "./routes/auth.js";
 import { realtimeRouter } from "./realtime.js";
+import { optionalAuth, requireRole } from "./auth.js";
 
 const app = express();
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -21,9 +23,11 @@ const frontendDist = join(__dirname, "..", "..", "pa-auan-shop", "dist");
 
 app.use(
   cors({
-    origin: process.env.CORS_ORIGIN?.split(",") ?? "*",
+    origin: process.env.CORS_ORIGIN?.split(",") ?? true,
+    credentials: true,
   })
 );
+app.use(optionalAuth);
 app.use(
   express.json({
     limit: "1mb",
@@ -34,16 +38,17 @@ app.use(
 );
 
 app.get("/api/health", (_req, res) => res.json({ ok: true }));
+app.use("/api/auth", authRouter);
 
 app.use("/api/categories", categoriesRouter);
 app.use("/api/products", productsRouter);
 app.use("/api/toppings", toppingsRouter);
-app.use("/api/stock", stockRouter);
+app.use("/api/stock", requireRole("manager"), stockRouter);
 app.use("/api/orders", ordersRouter);
 app.use("/api/orders", paymentsRouter);
-app.use("/api/sales", salesRouter);
+app.use("/api/sales", requireRole("manager"), salesRouter);
 app.use("/api/webhooks", webhooksRouter);
-app.use("/api/events", realtimeRouter);
+app.use("/api/events", requireRole("manager", "kitchen", "waiter"), realtimeRouter);
 
 // Production: serve the Vite frontend from the same Render Web Service.
 if (existsSync(frontendDist)) {

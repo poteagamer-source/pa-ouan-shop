@@ -10,8 +10,10 @@ import {
   FileText,
   Flame,
   CheckCircle2,
+  LogOut,
 } from "lucide-react";
 import { SHOP_SHORT } from "../../config/constants";
+import { useStaffAuth } from "../../context/StaffAuthContext";
 
 const managerLinks = [
   { to: "/staff", label: "หน้าหลัก", icon: Home, end: true },
@@ -43,6 +45,7 @@ interface Props {
 }
 
 export function StaffSidebar({ variant }: Props) {
+  const { user, logout } = useStaffAuth();
   const links =
     variant === "manager" ? managerLinks : variant === "kitchen" ? kitchenSubLinks : waiterSubLinks;
 
@@ -61,7 +64,7 @@ export function StaffSidebar({ variant }: Props) {
 
       {(variant === "kitchen" || variant === "waiter") && (
         <div className="flex gap-1.5 mb-4">
-          {moduleSwitchLinks.map(({ to, label, icon: Icon }) => (
+          {moduleSwitchLinks.filter((link) => user?.role === "manager" || link.to.includes(user?.role ?? "")).map(({ to, label, icon: Icon }) => (
             <NavLink
               key={to}
               to={to}
@@ -106,6 +109,11 @@ export function StaffSidebar({ variant }: Props) {
           </NavLink>
         ))}
       </nav>
+      <div className="mt-8 border-t border-gray-100 pt-4">
+        <p className="hidden truncate px-2 text-xs font-medium text-gray-700 md:block">{user?.displayName}</p>
+        <p className="mb-2 hidden px-2 text-[11px] text-gray-400 md:block">{user?.role}</p>
+        <button type="button" title="ออกจากระบบ" onClick={() => void logout()} className="flex w-full items-center justify-center gap-3 rounded-lg px-3 py-2.5 text-sm text-red-500 hover:bg-red-50 md:justify-start"><LogOut className="h-5 w-5 shrink-0" /><span className="hidden md:inline">ออกจากระบบ</span></button>
+      </div>
     </aside>
   );
 }
