@@ -83,6 +83,10 @@ INSERT INTO stock (product_id, stock_qty, unit) VALUES
   ('ds4', 24, 'ถ้วย')
 ON CONFLICT (product_id) DO NOTHING;
 
+INSERT INTO topping_stock (topping_id, stock_qty, unit)
+SELECT id, 20, 'หน่วย' FROM toppings
+ON CONFLICT (topping_id) DO NOTHING;
+
 
 -- ===================================================================
 -- ออเดอร์ตัวอย่าง: ครอบคลุมทั้งบอร์ดครัว (pending/cooking/ready/served)

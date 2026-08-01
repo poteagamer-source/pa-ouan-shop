@@ -110,6 +110,19 @@ export async function processPaymentEvent(event) {
            WHERE s.product_id = quantities.product_id`,
           [event.orderId]
         );
+        await client.query(
+          `UPDATE topping_stock AS s
+           SET stock_qty = GREATEST(s.stock_qty - quantities.qty, 0), updated_at = now()
+           FROM (
+             SELECT oit.topping_id, SUM(oi.quantity)::int AS qty
+             FROM order_item_toppings oit
+             JOIN order_items oi ON oi.id = oit.order_item_id
+             WHERE oi.order_id = $1 AND oit.topping_id IS NOT NULL
+             GROUP BY oit.topping_id
+           ) AS quantities
+           WHERE s.topping_id = quantities.topping_id`,
+          [event.orderId]
+        );
       }
     } else if (event.type === "PAYMENT_PROCESSING") {
       if (payment) await client.query("UPDATE payments SET status = 'processing', updated_at = now() WHERE id = $1", [payment.id]);
@@ -147,6 +160,7 @@ export async function processPaymentEvent(event) {
 
     await client.query("COMMIT");
     publishUpdate("orders", "updated", event.orderId);
+    if (event.type === "PAYMENT_SUCCEEDED") publishUpdate("stock", "updated", null);
     return { duplicate: false };
   } catch (err) {
     await client.query("ROLLBACK");

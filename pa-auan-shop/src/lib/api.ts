@@ -10,6 +10,7 @@ import type {
   SalesSummary,
   StockItem,
   Topping,
+  ToppingStockItem,
 } from "../types";
 
 const BASE_URL = import.meta.env.VITE_API_URL ?? "/api";
@@ -172,6 +173,16 @@ export function updateStock(
 export function adjustStock(productId: string, delta: number): Promise<StockItem> {
   return request(`/stock/${productId}/adjust`, { method: "PATCH", body: JSON.stringify({ delta }) });
 }
+
+export function addProductToStock(productId: string, payload: { stockQty: number; unit: string }): Promise<StockItem> {
+  return request(`/stock/${productId}`, { method: "POST", body: JSON.stringify(payload) });
+}
+export function removeProductFromStock(productId: string): Promise<void> { return request(`/stock/${productId}`, { method: "DELETE" }); }
+export function fetchToppingStock(): Promise<ToppingStockItem[]> { return request("/stock/toppings/all"); }
+export function addToppingToStock(id: string, payload: { stockQty: number; unit: string }): Promise<ToppingStockItem> { return request(`/stock/toppings/${id}`, { method: "POST", body: JSON.stringify(payload) }); }
+export function updateToppingStock(id: string, payload: Partial<{ stockQty: number; unit: string; active: boolean }>): Promise<ToppingStockItem> { return request(`/stock/toppings/${id}`, { method: "PUT", body: JSON.stringify(payload) }); }
+export function adjustToppingStock(id: string, delta: number): Promise<ToppingStockItem> { return request(`/stock/toppings/${id}/adjust`, { method: "PATCH", body: JSON.stringify({ delta }) }); }
+export function removeToppingFromStock(id: string): Promise<void> { return request(`/stock/toppings/${id}`, { method: "DELETE" }); }
 
 /* ---------------------------------- orders -------------------------------- */
 

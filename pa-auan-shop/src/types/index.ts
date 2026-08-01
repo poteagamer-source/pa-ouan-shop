@@ -115,6 +115,14 @@ export interface StockItem extends Product {
   status: "low" | "enough";
 }
 
+export interface ToppingStockItem extends Topping {
+  stockQty: number;
+  unit: string;
+  active: boolean;
+  status: "low" | "enough";
+  tier: 5 | 10;
+}
+
 /** ออเดอร์ที่จ่ายเงินแล้ว ตามที่ GET /api/sales ส่งกลับ */
 export interface SalesOrderItem {
   name: string;

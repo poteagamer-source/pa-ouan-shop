@@ -30,6 +30,7 @@ router.get("/", async (req, res, next) => {
     if (active !== undefined) {
       params.push(active === "true");
       conditions.push(`active = $${params.length}`);
+      if (active === "true") conditions.push("EXISTS (SELECT 1 FROM stock s WHERE s.product_id = products.id AND s.stock_qty > 0)");
     }
 
     const where = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "";

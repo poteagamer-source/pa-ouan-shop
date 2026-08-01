@@ -39,6 +39,20 @@ CREATE TABLE IF NOT EXISTS stock (
 ALTER TABLE stock ALTER COLUMN unit SET DEFAULT 'ถ้วย';
 UPDATE stock SET unit = 'ถ้วย' WHERE unit = 'ก้อน';
 
+CREATE TABLE IF NOT EXISTS topping_stock (
+  topping_id text PRIMARY KEY REFERENCES toppings(id) ON DELETE CASCADE,
+  stock_qty  int NOT NULL DEFAULT 0 CHECK (stock_qty >= 0),
+  unit       text NOT NULL DEFAULT 'หน่วย',
+  low_at     int NOT NULL DEFAULT 6,
+  active     boolean NOT NULL DEFAULT true,
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
+
+-- นำท็อปปิ้งที่มีอยู่เข้าสู่ทะเบียนสต๊อก โดยไม่สมมติยอดคงเหลือจริง
+INSERT INTO topping_stock (topping_id, stock_qty, unit)
+SELECT id, 0, 'หน่วย' FROM toppings
+ON CONFLICT (topping_id) DO NOTHING;
+
 CREATE TABLE IF NOT EXISTS staff_users (
   id            bigserial PRIMARY KEY,
   username      text NOT NULL UNIQUE,

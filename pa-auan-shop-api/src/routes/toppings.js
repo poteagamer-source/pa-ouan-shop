@@ -16,7 +16,8 @@ router.get("/", async (req, res, next) => {
   try {
     const { tier } = req.query;
     const { rows } = tier
-      ? await query("SELECT * FROM toppings WHERE tier = $1 ORDER BY id", [Number(tier)])
+      ? await query(`SELECT t.* FROM toppings t JOIN topping_stock s ON s.topping_id=t.id
+                     WHERE t.tier=$1 AND s.active=true AND s.stock_qty>0 ORDER BY t.id`, [Number(tier)])
       : await query("SELECT * FROM toppings ORDER BY tier, id");
     res.json(rows.map(mapTopping));
   } catch (err) {
