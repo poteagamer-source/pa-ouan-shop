@@ -26,6 +26,7 @@ const managerLinks = [
 ];
 
 const moduleSwitchLinks = [
+  { to: "/staff", label: "ผู้จัดการ", icon: Home },
   { to: "/staff/kitchen", label: "ห้องครัว", icon: ChefHat },
   { to: "/staff/waiter", label: "พนักงานเสิร์ฟ", icon: ConciergeBell },
 ];
@@ -51,8 +52,13 @@ export function StaffSidebar({ variant }: Props) {
   const links =
     variant === "manager" ? managerLinks : variant === "kitchen" ? kitchenSubLinks : waiterSubLinks;
 
-  return (
-    <aside className="min-h-dvh w-20 shrink-0 border-r border-gray-200 bg-white px-2 py-4 md:w-60 md:px-4 md:py-6">
+  const switches = moduleSwitchLinks.filter((link) => {
+    if (user?.role === "manager") return true;
+    return link.to.includes(user?.role ?? "");
+  });
+
+  return <>
+    <aside className="hidden min-h-dvh w-60 shrink-0 flex-col border-r border-gray-200 bg-white px-4 py-6 lg:flex">
       <div className="flex items-center gap-2 mb-6 px-1">
         <span className="flex h-9 w-9 items-center justify-center rounded-full bg-brand-light text-brand shrink-0">
           <ChefHat className="w-5 h-5" />
@@ -66,7 +72,7 @@ export function StaffSidebar({ variant }: Props) {
 
       {(variant === "kitchen" || variant === "waiter") && (
         <div className="flex gap-1.5 mb-4">
-          {moduleSwitchLinks.filter((link) => user?.role === "manager" || link.to.includes(user?.role ?? "")).map(({ to, label, icon: Icon }) => (
+          {switches.map(({ to, label, icon: Icon }) => (
             <NavLink
               key={to}
               to={to}
@@ -78,7 +84,7 @@ export function StaffSidebar({ variant }: Props) {
               }
             >
               <Icon className="w-4 h-4" />
-              <span className="hidden md:inline">{label}</span>
+              <span>{label}</span>
             </NavLink>
           ))}
         </div>
@@ -107,15 +113,21 @@ export function StaffSidebar({ variant }: Props) {
             }
           >
             <Icon className="w-5 h-5 shrink-0" />
-            <span className="hidden md:inline">{label}</span>
+            <span>{label}</span>
           </NavLink>
         ))}
       </nav>
       <div className="mt-8 border-t border-gray-100 pt-4">
-        <p className="hidden truncate px-2 text-xs font-medium text-gray-700 md:block">{user?.displayName}</p>
-        <p className="mb-2 hidden px-2 text-[11px] text-gray-400 md:block">{user?.role}</p>
-        <button type="button" title="ออกจากระบบ" onClick={() => void logout()} className="flex w-full items-center justify-center gap-3 rounded-lg px-3 py-2.5 text-sm text-red-500 hover:bg-red-50 md:justify-start"><LogOut className="h-5 w-5 shrink-0" /><span className="hidden md:inline">ออกจากระบบ</span></button>
+        <p className="truncate px-2 text-xs font-medium text-gray-700">{user?.displayName}</p>
+        <p className="mb-2 px-2 text-[11px] text-gray-400">{user?.role}</p>
+        <button type="button" title="ออกจากระบบ" onClick={() => void logout()} className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-red-500 hover:bg-red-50"><LogOut className="h-5 w-5 shrink-0" /><span>ออกจากระบบ</span></button>
       </div>
     </aside>
-  );
+
+    <nav className="no-scrollbar fixed inset-x-0 bottom-0 z-50 flex items-stretch gap-1 overflow-x-auto border-t border-gray-200 bg-white/95 px-2 pt-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] shadow-[0_-4px_20px_rgba(0,0,0,0.08)] backdrop-blur lg:hidden">
+      {user?.role === "manager" && variant !== "manager" && switches.map(({ to, label, icon: Icon }) => <NavLink key={`switch-${to}`} to={to} className={({isActive})=>`flex min-w-[68px] flex-col items-center gap-1 rounded-xl px-2 py-1.5 text-[10px] ${isActive?"bg-brand-light text-brand":"text-gray-500"}`}><Icon className="h-5 w-5"/><span className="whitespace-nowrap">{label}</span></NavLink>)}
+      {links.map(({to,label,icon:Icon,end})=><NavLink key={`mobile-${to}`} to={to} end={end} className={({isActive})=>`flex min-w-[72px] flex-col items-center gap-1 rounded-xl px-2 py-1.5 text-[10px] ${isActive?"bg-brand-light font-medium text-brand":"text-gray-500"}`}><Icon className="h-5 w-5"/><span className="whitespace-nowrap">{label}</span></NavLink>)}
+      <button type="button" onClick={()=>void logout()} className="flex min-w-[68px] flex-col items-center gap-1 rounded-xl px-2 py-1.5 text-[10px] text-red-500"><LogOut className="h-5 w-5"/><span>ออกระบบ</span></button>
+    </nav>
+  </>;
 }

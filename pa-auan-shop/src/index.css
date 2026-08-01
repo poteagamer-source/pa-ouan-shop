@@ -19,7 +19,10 @@ body {
   background: #f8f8f8;
   color: #333;
   -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
 }
+
+button, a, input, select { touch-action: manipulation; }
 
 #root {
   min-height: 100dvh;

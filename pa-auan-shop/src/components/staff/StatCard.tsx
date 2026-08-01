@@ -25,18 +25,18 @@ export function StatCard({
 }: StatCardProps) {
   return (
     <div
-      className={`flex-1 min-w-[190px] bg-white rounded-2xl p-4 flex items-center gap-3 shadow-sm border ${
+      className={`min-w-[145px] flex-1 bg-white rounded-2xl p-3 sm:p-4 flex items-center gap-2 sm:gap-3 shadow-sm border ${
         highlighted ? `ring-1 ${highlightColorClass}` : "border-gray-100"
       }`}
     >
       <div
-        className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 ${iconBgClass} ${iconColorClass}`}
+        className={`h-10 w-10 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center shrink-0 ${iconBgClass} ${iconColorClass}`}
       >
         {icon}
       </div>
       <div className="min-w-0">
         <p className="text-xs text-gray-400 leading-tight">{label}</p>
-        <p className={`text-xl font-bold leading-snug ${valueColorClass}`}>{value}</p>
+        <p className={`text-lg sm:text-xl font-bold leading-snug ${valueColorClass}`}>{value}</p>
         {sublabel && <p className="text-[11px] text-gray-400 leading-tight">{sublabel}</p>}
       </div>
     </div>
