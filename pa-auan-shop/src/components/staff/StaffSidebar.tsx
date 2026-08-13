@@ -13,6 +13,7 @@ import {
   CheckCircle2,
   LogOut,
   Users,
+  QrCode,
 } from "lucide-react";
 import { SHOP_SHORT } from "../../config/constants";
 import { useStaffAuth } from "../../context/StaffAuthContext";
@@ -24,6 +25,7 @@ const managerLinks = [
   { to: "/staff/purchase-orders", label: "รายการสั่งซื้อ", icon: Truck },
   { to: "/staff/stock", label: "สต๊อกสินค้า", icon: Archive },
   { to: "/staff/report", label: "รายงานยอดขาย", icon: FileBarChart2 },
+  { to: "/staff/qr-codes", label: "จัดการ QR Code", icon: QrCode },
   { to: "/staff/users", label: "จัดการพนักงาน", icon: Users },
 ];
 

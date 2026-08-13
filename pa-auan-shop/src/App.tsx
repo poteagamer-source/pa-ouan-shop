@@ -7,6 +7,7 @@ import { CustomerRouteGuard } from "./components/customer/CustomerRouteGuard";
 import { RoleSelect } from "./pages/RoleSelect";
 import { CustomerQrEntry } from "./pages/qr/CustomerQrEntry";
 import { StaffQrEntry } from "./pages/qr/StaffQrEntry";
+import { TableQrEntry } from "./pages/qr/TableQrEntry";
 import { HomePage } from "./pages/customer/HomePage";
 import { ProductDetailPage } from "./pages/customer/ProductDetailPage";
 import { CartPage } from "./pages/customer/CartPage";
@@ -56,6 +57,7 @@ export default function App() {
 
           {/* QR พนักงาน — แยกจากลูกค้า */}
           <Route path="/staff-entry" element={<StaffQrEntry />} />
+          <Route path="/q/:token" element={<TableQrEntry />} />
 
           {/* ส่วนผู้จัดการ: อนุญาตเฉพาะบัญชี manager */}
           <Route element={<StaffRouteGuard allowed={["manager"]} />}>

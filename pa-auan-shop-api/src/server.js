@@ -16,6 +16,7 @@ import paymentsRouter from "./routes/payments.js";
 import webhooksRouter from "./routes/webhooks.js";
 import authRouter from "./routes/auth.js";
 import staffUsersRouter from "./routes/staff-users.js";
+import qrCodesRouter from "./routes/qr-codes.js";
 import { realtimeRouter } from "./realtime.js";
 import { optionalAuth, requireRole } from "./auth.js";
 
@@ -46,6 +47,7 @@ app.get("/api/health", (_req, res) => res.json({ ok: true }));
 // Route สาธารณะและการจัดการบัญชีพนักงาน
 app.use("/api/auth", authRouter);
 app.use("/api/staff-users", staffUsersRouter);
+app.use("/api/qr-codes", qrCodesRouter);
 
 // Route หลักของระบบร้านค้า (บาง route จำกัดสิทธิ์ตาม role)
 app.use("/api/categories", categoriesRouter);

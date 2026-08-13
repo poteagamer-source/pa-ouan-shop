@@ -28,6 +28,12 @@ export interface RealtimeUpdate {
 export type StaffRole = "manager" | "kitchen" | "waiter";
 export interface StaffUser { id: number; username: string; displayName: string; role: StaffRole }
 export interface ManagedStaffUser extends StaffUser { active: boolean; createdAt: string }
+export interface TableQrCode { id: string; token: string; tableId: string; createdAt: string }
+
+export const fetchTableQrCodes = (): Promise<TableQrCode[]> => request("/qr-codes");
+export const createTableQrCode = (tableId: string): Promise<TableQrCode> => request("/qr-codes", { method: "POST", body: JSON.stringify({ tableId }) });
+export const deleteTableQrCode = (id: string): Promise<void> => request(`/qr-codes/${encodeURIComponent(id)}`, { method: "DELETE" });
+export const resolveTableQrCode = (token: string): Promise<{ tableId: string }> => request(`/qr-codes/resolve/${encodeURIComponent(token)}`);
 
 /**
  * เปิด Server-Sent Events ไปยัง backend เพื่อรับสัญญาณว่าข้อมูลชนิดใดเปลี่ยน

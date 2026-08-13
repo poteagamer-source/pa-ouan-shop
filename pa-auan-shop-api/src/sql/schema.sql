@@ -251,6 +251,16 @@ CREATE INDEX IF NOT EXISTS idx_orders_fulfillment_status ON orders(fulfillment_s
 CREATE INDEX IF NOT EXISTS idx_order_items_order ON order_items(order_id);
 CREATE INDEX IF NOT EXISTS idx_order_item_toppings_item ON order_item_toppings(order_item_id);
 
+-- QR โต๊ะใช้ token แบบสุ่มแทนการเปิดเผยเลขโต๊ะใน URL โดยตรง
+-- UNIQUE(table_id) บังคับให้แต่ละโต๊ะมี QR ที่ใช้งานได้เพียงใบเดียว
+CREATE TABLE IF NOT EXISTS table_qr_codes (
+  id         bigserial PRIMARY KEY,
+  token      text NOT NULL UNIQUE,
+  table_id   text NOT NULL UNIQUE CHECK (table_id ~ '^[A-Z][0-9]{2}$'),
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_table_qr_codes_token ON table_qr_codes(token);
+
 -- ลบออเดอร์สาธิตรุ่นเก่าที่ไม่ได้สร้างผ่านขั้นตอนสั่งซื้อของลูกค้า
 -- ระบุรหัสแบบเจาะจงเพื่อไม่กระทบออเดอร์จริง (รหัสจริงขึ้นต้นด้วย O)
 DELETE FROM payment_events WHERE order_id IN (

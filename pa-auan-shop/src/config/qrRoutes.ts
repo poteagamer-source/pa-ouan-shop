@@ -10,6 +10,11 @@ export function tableOrderUrl(tableId: string): string {
   return `${origin}/order/${encodeURIComponent(tableId)}`;
 }
 
+/** URL QR รุ่นใหม่ ใช้ token เฉพาะและให้ backend เป็นผู้ค้นหาโต๊ะ */
+export function tokenOrderUrl(token: string): string {
+  return `${origin}/q/${encodeURIComponent(token)}`;
+}
+
 /** QR สำหรับพนักงาน / ผู้จัดการ — แยกจากลูกค้า */
 export function staffPortalUrl(): string {
   return `${origin}/staff-entry`;
