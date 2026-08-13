@@ -4,7 +4,7 @@ import { PageHeader } from "../../components/staff/PageHeader";
 import { StatCard } from "../../components/staff/StatCard";
 import { CategorySidebar, type MenuCategoryId } from "../../components/staff/CategorySidebar";
 import { categoryMeta } from "../../config/constants";
-import { createProduct, deleteProduct, fetchProducts, fetchToppingStock, subscribeToUpdates, updateProduct, updateTopping, updateToppingStock } from "../../lib/api";
+import { createProduct, createTopping, deleteProduct, deleteTopping, fetchProducts, fetchToppingStock, subscribeToUpdates, updateProduct, updateTopping, updateToppingStock } from "../../lib/api";
 import type { CategoryId, Product, ToppingStockItem } from "../../types";
 
 const PAGE_SIZE = 4;
@@ -21,6 +21,9 @@ type ProductForm = {
   bestseller: boolean;
   recommended: boolean;
 };
+
+type ToppingForm = { name: string; price: string; image: string; tier: 5 | 10; stockQty: string };
+const emptyToppingForm: ToppingForm = { name: "", price: "5", image: "/images/topping-grass-jelly.png", tier: 5, stockQty: "0" };
 
 const emptyForm = (category: CategoryId): ProductForm => ({
   name: "",
@@ -43,6 +46,9 @@ export function MenuManagement() {
   const [editing, setEditing] = useState<Product | null>(null);
   const [form, setForm] = useState<ProductForm>(emptyForm("bualoy"));
   const [modalOpen, setModalOpen] = useState(false);
+  const [toppingModalOpen, setToppingModalOpen] = useState(false);
+  const [editingTopping, setEditingTopping] = useState<ToppingStockItem | null>(null);
+  const [toppingForm, setToppingForm] = useState<ToppingForm>(emptyToppingForm);
 
   const loadProducts = async () => {
     setLoading(true);
@@ -103,10 +109,55 @@ export function MenuManagement() {
   }, [query, toppings]);
 
   const openCreate = () => {
-    if (selectedCategory === "toppings") return;
+    if (selectedCategory === "toppings") {
+      setEditingTopping(null);
+      setToppingForm(emptyToppingForm);
+      setToppingModalOpen(true);
+      return;
+    }
     setEditing(null);
     setForm(emptyForm(selectedCategory));
     setModalOpen(true);
+  };
+
+  const openEditTopping = (item: ToppingStockItem) => {
+    setEditingTopping(item);
+    setToppingForm({ name: item.name, price: String(item.price), image: item.image || "", tier: item.tier, stockQty: String(item.stockQty) });
+    setToppingModalOpen(true);
+  };
+
+  const saveTopping = async (event: FormEvent) => {
+    event.preventDefault();
+    const price = Number(toppingForm.price);
+    const stockQty = Number(toppingForm.stockQty);
+    if (!toppingForm.name.trim() || !Number.isFinite(price) || price < 0 || !Number.isInteger(stockQty) || stockQty < 0) {
+      setMessage("กรุณากรอกชื่อ ราคา และจำนวนสต๊อกให้ถูกต้อง");
+      return;
+    }
+    setSaving(true);
+    try {
+      if (editingTopping) {
+        await updateTopping(editingTopping.id, { name: toppingForm.name.trim(), price, image: toppingForm.image.trim(), tier: toppingForm.tier });
+        await updateToppingStock(editingTopping.id, { stockQty });
+        setMessage("แก้ไขท็อปปิ้งเรียบร้อย");
+      } else {
+        await createTopping({ name: toppingForm.name.trim(), price, image: toppingForm.image.trim(), tier: toppingForm.tier, stockQty });
+        setMessage("เพิ่มท็อปปิ้งเรียบร้อย");
+      }
+      setToppingModalOpen(false);
+      await loadProducts();
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "บันทึกท็อปปิ้งไม่สำเร็จ");
+    } finally { setSaving(false); }
+  };
+
+  const removeTopping = async (item: ToppingStockItem) => {
+    if (!window.confirm(`ต้องการลบ “${item.name}” ใช่หรือไม่?`)) return;
+    try {
+      await deleteTopping(item.id);
+      setToppings((current) => current.filter((row) => row.id !== item.id));
+      setMessage("ลบท็อปปิ้งเรียบร้อย");
+    } catch (error) { setMessage(error instanceof Error ? error.message : "ลบท็อปปิ้งไม่สำเร็จ"); }
   };
 
   const saveToppingPrice = async (item: ToppingStockItem, rawPrice: string) => {
@@ -255,9 +306,9 @@ export function MenuManagement() {
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                 <input type="search" value={query} onChange={(event) => { setQuery(event.target.value); setPage(1); }} placeholder="ค้นหาสินค้า" className="rounded-full border border-gray-200 pl-9 pr-4 py-2 text-sm outline-none focus:border-brand" />
               </div>
-              {selectedCategory !== "toppings" && <button type="button" onClick={openCreate} className="flex items-center gap-1.5 rounded-full bg-brand text-white text-sm font-medium px-4 py-2 hover:bg-brand-dark">
-                <Plus className="w-4 h-4" /> เพิ่มสินค้า
-              </button>}
+              <button type="button" onClick={openCreate} className="flex items-center gap-1.5 rounded-full bg-brand text-white text-sm font-medium px-4 py-2 hover:bg-brand-dark">
+                <Plus className="w-4 h-4" /> {selectedCategory === "toppings" ? "เพิ่มท็อปปิ้ง" : "เพิ่มสินค้า"}
+              </button>
             </div>
           </div>
 
@@ -273,10 +324,10 @@ export function MenuManagement() {
                   <tr key={item.id} className="border-b border-gray-50 last:border-0">
                     <td className="py-3 text-gray-500">{index + 1}</td>
                     <td className="py-3"><img src={item.image} alt={item.name} className="h-10 w-10 rounded-lg object-cover" /></td>
-                    <td className="py-3 text-gray-700"><p>{item.name}</p><p className="text-xs text-gray-400">กลุ่ม {item.tier} บาท</p></td>
+                    <td className="py-3 text-gray-700"><p>{item.name}</p><p className="text-xs text-gray-400">กลุ่ม {item.tier} บาท</p><p className={`text-xs font-medium ${item.stockQty <= 0 ? "text-red-500" : "text-green-600"}`}>{item.stockQty <= 0 ? "สต๊อกหมด" : `สต๊อก ${item.stockQty} ${item.unit}`}</p></td>
                     <td className="py-3"><input key={`${item.id}-${item.price}`} type="number" min="0" step="0.01" defaultValue={item.price.toFixed(2)} onBlur={(event) => void saveToppingPrice(item, event.currentTarget.value)} onKeyDown={(event) => { if (event.key === "Enter") { event.currentTarget.blur(); void saveToppingPrice(item, event.currentTarget.value); } }} className="w-24 rounded-full border border-gray-200 px-3 py-1.5 text-sm outline-none focus:border-brand" /><span className="ml-1 text-gray-400">บาท</span></td>
                     <td className="py-3"><button type="button" onClick={() => void toggleTopping(item)} aria-pressed={item.active} className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${item.active ? "bg-green-500" : "bg-gray-300"}`}><span className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${item.active ? "translate-x-6" : "translate-x-1"}`} /></button><span className="ml-2 text-xs text-gray-500">{item.active ? "เปิดขาย" : "ปิดขาย"}</span></td>
-                    <td className="py-3 text-xs text-gray-400">แก้ราคาได้ทันที</td>
+                    <td className="py-3"><div className="flex items-center gap-2"><button type="button" onClick={() => openEditTopping(item)} aria-label="แก้ไข" className="flex h-7 w-7 items-center justify-center rounded-full bg-yellow-100 text-yellow-600"><Pencil className="h-3.5 w-3.5" /></button><button type="button" onClick={() => void removeTopping(item)} aria-label="ลบ" className="flex h-7 w-7 items-center justify-center rounded-full bg-red-500 text-white"><Trash2 className="h-3.5 w-3.5" /></button></div></td>
                   </tr>
                 ))}
                 {selectedCategory !== "toppings" && pageItems.map((product, index) => {
@@ -341,6 +392,25 @@ export function MenuManagement() {
               <button type="button" onClick={() => setModalOpen(false)} className="rounded-full border border-gray-200 px-4 py-2 text-sm text-gray-600">ยกเลิก</button>
               <button type="submit" disabled={saving} className="rounded-full bg-brand px-5 py-2 text-sm font-medium text-white disabled:opacity-50">{saving ? "กำลังบันทึก..." : "บันทึก"}</button>
             </div>
+          </form>
+        </div>
+      )}
+
+      {toppingModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" role="dialog" aria-modal="true">
+          <form onSubmit={saveTopping} className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl">
+            <div className="mb-5 flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-gray-800">{editingTopping ? "แก้ไขท็อปปิ้ง" : "เพิ่มท็อปปิ้ง"}</h2>
+              <button type="button" onClick={() => setToppingModalOpen(false)} className="rounded-full p-1 text-gray-400 hover:bg-gray-100"><X className="h-5 w-5" /></button>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <label className="sm:col-span-2 text-sm text-gray-600">ชื่อท็อปปิ้ง<input required value={toppingForm.name} onChange={(event) => setToppingForm({ ...toppingForm, name: event.target.value })} className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 outline-none focus:border-brand" /></label>
+              <label className="text-sm text-gray-600">ราคา (บาท)<input required type="number" min="0" step="0.01" value={toppingForm.price} onChange={(event) => setToppingForm({ ...toppingForm, price: event.target.value })} className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 outline-none focus:border-brand" /></label>
+              <label className="text-sm text-gray-600">กลุ่มราคา<select value={toppingForm.tier} onChange={(event) => setToppingForm({ ...toppingForm, tier: Number(event.target.value) as 5 | 10 })} className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 outline-none focus:border-brand"><option value={5}>5 บาท</option><option value={10}>10 บาท</option></select></label>
+              <label className="text-sm text-gray-600">จำนวนสต๊อก<input required type="number" min="0" step="1" value={toppingForm.stockQty} onChange={(event) => setToppingForm({ ...toppingForm, stockQty: event.target.value })} className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 outline-none focus:border-brand" /></label>
+              <label className="sm:col-span-2 text-sm text-gray-600">URL รูปภาพ<input value={toppingForm.image} onChange={(event) => setToppingForm({ ...toppingForm, image: event.target.value })} className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 outline-none focus:border-brand" /></label>
+            </div>
+            <div className="mt-6 flex justify-end gap-2"><button type="button" onClick={() => setToppingModalOpen(false)} className="rounded-full border border-gray-200 px-4 py-2 text-sm text-gray-600">ยกเลิก</button><button type="submit" disabled={saving} className="rounded-full bg-brand px-5 py-2 text-sm font-medium text-white disabled:opacity-50">{saving ? "กำลังบันทึก..." : "บันทึก"}</button></div>
           </form>
         </div>
       )}

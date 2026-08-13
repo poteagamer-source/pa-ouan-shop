@@ -167,6 +167,14 @@ export function updateTopping(id: string, payload: Partial<{ name: string; price
   return request(`/toppings/${id}`, { method: "PUT", body: JSON.stringify(payload) });
 }
 
+export function createTopping(payload: { name: string; price: number; image: string; tier: 5 | 10; stockQty: number; unit?: string }): Promise<Topping> {
+  return request("/toppings", { method: "POST", body: JSON.stringify(payload) });
+}
+
+export function deleteTopping(id: string): Promise<void> {
+  return request(`/toppings/${id}`, { method: "DELETE" });
+}
+
 /* ---------------------------------- stock --------------------------------- */
 
 export function fetchStock(): Promise<StockItem[]> {
