@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type FormEvent, type KeyboardEvent } from "react";
-import { Search, Plus, CheckCircle2, XCircle, Grid2x2, Package, Pencil, Trash2, X } from "lucide-react";
+import { Search, Plus, CheckCircle2, XCircle, Grid2x2, Package, Pencil, Trash2, X, TriangleAlert } from "lucide-react";
 import { PageHeader } from "../../components/staff/PageHeader";
 import { StatCard } from "../../components/staff/StatCard";
 import { CategorySidebar, type MenuCategoryId } from "../../components/staff/CategorySidebar";
@@ -92,7 +92,11 @@ export function MenuManagement() {
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const safePage = Math.min(page, totalPages);
   const pageItems = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
-  const activeCount = products.filter((product) => product.active !== false).length;
+  const activeProductCount = products.filter((product) => product.active !== false).length;
+  const activeToppingCount = toppings.filter((item) => item.active && item.stockQty > 0).length;
+  const activeCount = activeProductCount + activeToppingCount;
+  const totalItemCount = products.length + toppings.length;
+  const toppingOutCount = toppings.filter((item) => item.stockQty <= 0).length;
   const filteredToppings = useMemo(() => {
     const term = query.trim().toLowerCase();
     return term ? toppings.filter((item) => item.name.toLowerCase().includes(term)) : toppings;
@@ -217,10 +221,11 @@ export function MenuManagement() {
       <PageHeader title="จัดการสินค้า" subtitle="เพิ่ม ลบ หรือแก้ไขข้อมูลรายการสินค้าและราคา" />
 
       <div className="flex flex-wrap gap-4 mb-6">
-        <StatCard icon={<Package className="w-5 h-5" />} iconBgClass="bg-brand-light" iconColorClass="text-brand" label="สินค้าทั้งหมด" value={String(products.length + toppings.length)} sublabel="รวมท็อปปิ้ง" highlighted />
+        <StatCard icon={<Package className="w-5 h-5" />} iconBgClass="bg-brand-light" iconColorClass="text-brand" label="สินค้าทั้งหมด" value={String(totalItemCount)} sublabel="รวมท็อปปิ้ง" highlighted />
         <StatCard icon={<CheckCircle2 className="w-5 h-5" />} iconBgClass="bg-green-50" iconColorClass="text-green-500" label="เปิดขาย" value={String(activeCount)} valueColorClass="text-green-600" sublabel="รายการ" />
-        <StatCard icon={<XCircle className="w-5 h-5" />} iconBgClass="bg-red-50" iconColorClass="text-red-500" label="ปิดขาย" value={String(products.length - activeCount)} valueColorClass="text-red-500" sublabel="รายการ" />
+        <StatCard icon={<XCircle className="w-5 h-5" />} iconBgClass="bg-red-50" iconColorClass="text-red-500" label="ปิดขาย" value={String(totalItemCount - activeCount)} valueColorClass="text-red-500" sublabel="รวมสินค้าและท็อปปิ้ง" />
         <StatCard icon={<Grid2x2 className="w-5 h-5" />} iconBgClass="bg-blue-50" iconColorClass="text-blue-500" label="หมวดหมู่สินค้า" value={String(categories.length + 1)} valueColorClass="text-blue-500" sublabel="รวมท็อปปิ้ง" />
+        <StatCard icon={<TriangleAlert className="w-5 h-5" />} iconBgClass="bg-amber-50" iconColorClass="text-amber-600" label="ท็อปปิ้งหมด" value={String(toppingOutCount)} valueColorClass={toppingOutCount > 0 ? "text-red-500" : "text-green-600"} sublabel="สต๊อกเหลือ 0" />
       </div>
 
       {message && (
