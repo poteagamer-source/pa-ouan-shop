@@ -28,16 +28,19 @@ import { StaffRouteGuard } from "./components/staff/StaffRouteGuard";
 import { StaffManagementPage } from "./pages/staff/StaffManagementPage";
 
 /** เดิม — redirect ไปหน้าแรก (ต้องสแกน QR) */
+// เส้นทางเก่าสำหรับลูกค้า: บังคับให้เริ่มจากการสแกน QR ที่โต๊ะ
 function LegacyCustomerRedirect() {
   return <Navigate to="/?hint=scan-table-qr" replace />;
 }
 
 export default function App() {
   return (
+    // Provider ส่วนกลางที่ทุกหน้าต้องใช้ร่วมกัน
     <CategoriesProvider>
     <CartProvider>
       <BrowserRouter>
         <Routes>
+          {/* หน้าเริ่มต้นสำหรับเลือกว่าจะเข้าใช้งานในบทบาทใด */}
           <Route path="/" element={<RoleSelect />} />
 
           {/* QR ลูกค้า — สแกนที่โต๊ะ → /order/A05 */}
@@ -53,6 +56,7 @@ export default function App() {
           {/* QR พนักงาน — แยกจากลูกค้า */}
           <Route path="/staff-entry" element={<StaffQrEntry />} />
 
+          {/* ส่วนผู้จัดการ: อนุญาตเฉพาะบัญชี manager */}
           <Route element={<StaffRouteGuard allowed={["manager"]} />}>
             <Route path="/staff" element={<StaffLayout variant="manager" />}>
               <Route index element={<ManagerDashboard />} />
@@ -72,6 +76,7 @@ export default function App() {
               </KitchenOrdersProvider>
             }
           >
+            {/* ส่วนครัว: manager และ kitchen เข้าถึงได้ */}
             <Route element={<StaffRouteGuard allowed={["manager", "kitchen"]} />}>
               <Route path="/staff/kitchen" element={<StaffLayout variant="kitchen" showSearch={false} />}>
                 <Route index element={<KitchenHomePage />} />
@@ -80,6 +85,7 @@ export default function App() {
                 <Route path="ready" element={<KitchenReadyPage />} />
               </Route>
             </Route>
+            {/* ส่วนพนักงานเสิร์ฟ: manager และ waiter เข้าถึงได้ */}
             <Route element={<StaffRouteGuard allowed={["manager", "waiter"]} />}>
               <Route path="/staff/waiter" element={<StaffLayout variant="waiter" showSearch={false} />}>
                 <Route index element={<WaiterTasksPage />} />
@@ -95,6 +101,7 @@ export default function App() {
           <Route path="/order-status" element={<LegacyCustomerRedirect />} />
           <Route path="/product/:id" element={<LegacyCustomerRedirect />} />
 
+          {/* URL ที่ไม่รู้จักให้กลับไปหน้าเลือกบทบาท */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>

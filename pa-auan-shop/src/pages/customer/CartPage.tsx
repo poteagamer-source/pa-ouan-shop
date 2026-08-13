@@ -38,11 +38,7 @@ export function CartPage() {
               className="pointer-events-none absolute bottom-8 left-1/2 -translate-x-1/2 w-44 h-44 object-contain opacity-25"
             />
 
-            <div className="mt-8 flex justify-between items-end relative z-10">
-              <div>
-                <p className="text-sm text-gray-500">Total</p>
-                <p className="text-2xl font-bold">฿ {total.toFixed(2)}</p>
-              </div>
+            <div className="mt-8 flex justify-end relative z-10">
               <div className="flex flex-col gap-2">
                 <Link
                   to={paths.menu}

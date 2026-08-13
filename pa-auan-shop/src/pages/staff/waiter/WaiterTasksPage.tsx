@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { ConciergeBell, CheckCircle2 } from "lucide-react";
 import { PageHeader } from "../../../components/staff/PageHeader";
 import { StatCard } from "../../../components/staff/StatCard";
@@ -7,9 +8,16 @@ import { useKitchenOrders } from "../../../context/KitchenOrdersContext";
 
 export function WaiterTasksPage() {
   const { counts, byStatus, advance, pendingOrderIds, error } = useKitchenOrders();
+  const [confirmation, setConfirmation] = useState<string | null>(null);
   const readyOrders = byStatus("ready");
   const servedOrders = byStatus("served");
   const recentServed = servedOrders.slice(0, 3);
+  const confirmServed = async (id: string) => {
+    setConfirmation(null);
+    const succeeded = await advance(id);
+    if (succeeded) setConfirmation(`ยืนยันเสิร์ฟออเดอร์ ${id} เรียบร้อยแล้ว`);
+    return succeeded;
+  };
 
   return (
     <div className="max-w-6xl">
@@ -47,12 +55,13 @@ export function WaiterTasksPage() {
           <p className="text-xs text-gray-400 mb-4">
             ตรวจสอบเลขโต๊ะ นำอาหารไปเสิร์ฟ แล้วจึงกดยืนยันว่าเสิร์ฟแล้ว
           </p>
+          {confirmation && <p role="status" className="mb-4 rounded-lg bg-green-50 px-3 py-2 text-sm font-medium text-green-700">✓ {confirmation}</p>}
           {error && <p className="mb-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">{error}</p>}
           {readyOrders.length === 0 ? (
             <p className="text-sm text-gray-400 text-center py-10">ไม่มีงานที่ต้องเสิร์ฟในขณะนี้</p>
           ) : (
             readyOrders.map((order) => (
-              <WaiterTaskCard key={order.id} order={order} onServe={advance} busy={pendingOrderIds.has(order.id)} />
+              <WaiterTaskCard key={order.id} order={order} onServe={confirmServed} busy={pendingOrderIds.has(order.id)} />
             ))
           )}
         </div>

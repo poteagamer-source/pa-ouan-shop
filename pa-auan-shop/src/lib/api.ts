@@ -15,6 +15,8 @@ import type {
 
 const BASE_URL = import.meta.env.VITE_API_URL ?? "/api";
 
+/* ------------------------- realtime และชนิดข้อมูลร่วม ------------------------- */
+
 export interface RealtimeUpdate {
   resource: "products" | "categories" | "toppings" | "stock" | "orders";
   action: "created" | "updated" | "deleted";
@@ -47,6 +49,7 @@ export class ApiError extends Error {
   }
 }
 
+// ฟังก์ชันกลางสำหรับเรียก API: แนบ cookie, แปลง JSON และจัดรูปแบบ error
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
   const res = await fetch(`${BASE_URL}${path}`, {
     credentials: "include",
@@ -68,6 +71,8 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
   if (res.status === 204) return undefined as T;
   return res.json() as Promise<T>;
 }
+
+/* -------------------------- การยืนยันตัวตนพนักงาน -------------------------- */
 
 export function loginStaff(username: string, password: string): Promise<StaffUser> {
   return request("/auth/login", { method: "POST", body: JSON.stringify({ username, password }) });
@@ -97,6 +102,7 @@ export function updateStaffUser(id: number, payload: Partial<{ displayName: stri
   return request(`/staff-users/${id}`, { method: "PATCH", body: JSON.stringify(payload) });
 }
 
+// สร้าง query string โดยตัดค่าที่ไม่ได้ระบุออก
 function toQueryString(params: Record<string, string | number | boolean | undefined>): string {
   const entries = Object.entries(params).filter(([, v]) => v !== undefined && v !== "");
   if (entries.length === 0) return "";

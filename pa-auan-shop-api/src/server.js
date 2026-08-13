@@ -18,10 +18,12 @@ import staffUsersRouter from "./routes/staff-users.js";
 import { realtimeRouter } from "./realtime.js";
 import { optionalAuth, requireRole } from "./auth.js";
 
+// ตั้งค่าแอปและตำแหน่งไฟล์ frontend ที่ build แล้ว
 const app = express();
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const frontendDist = join(__dirname, "..", "..", "pa-auan-shop", "dist");
 
+// Middleware ส่วนกลาง: CORS, session ผู้ใช้ และ JSON body
 app.use(
   cors({
     origin: process.env.CORS_ORIGIN?.split(",") ?? true,
@@ -39,9 +41,12 @@ app.use(
 );
 
 app.get("/api/health", (_req, res) => res.json({ ok: true }));
+
+// Route สาธารณะและการจัดการบัญชีพนักงาน
 app.use("/api/auth", authRouter);
 app.use("/api/staff-users", staffUsersRouter);
 
+// Route หลักของระบบร้านค้า (บาง route จำกัดสิทธิ์ตาม role)
 app.use("/api/categories", categoriesRouter);
 app.use("/api/products", productsRouter);
 app.use("/api/toppings", toppingsRouter);

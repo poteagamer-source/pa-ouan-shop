@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { CheckCircle2, Circle, Clock3, Loader2 } from "lucide-react";
+import { CheckCircle2, Circle, Clock3, Loader2, Printer } from "lucide-react";
 import { CustomerPageLayout } from "../../components/customer/CustomerPageLayout";
 import { OrderSummaryCard } from "../../components/OrderSummaryCard";
 import { useCart } from "../../context/CartContext";
@@ -132,6 +132,20 @@ export function OrderStatusPage() {
             </div>
             <WorkflowProgress order={order} />
             <OrderSummaryCard items={summaryItems} total={order.total} currency={order.currency} />
+            {["succeeded", "partially_refunded", "refunded"].includes(order.paymentStatus) && (
+              <div className="rounded-xl border border-green-100 bg-white p-4 shadow-sm">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="font-semibold text-green-700">ใบเสร็จรับเงิน</p>
+                    <p className="text-xs text-gray-500">เลขที่ {order.id} · โต๊ะ {order.table}</p>
+                    <p className="mt-1 text-sm font-bold text-gray-800">{new Intl.NumberFormat(undefined, { style: "currency", currency: order.currency }).format(order.total)}</p>
+                  </div>
+                  <button type="button" onClick={() => window.print()} className="flex shrink-0 items-center gap-1 rounded-lg border border-green-200 px-3 py-2 text-xs font-medium text-green-700">
+                    <Printer className="h-4 w-4" /> พิมพ์ใบเสร็จ
+                  </button>
+                </div>
+              </div>
+            )}
             {["pending", "failed", "cancelled"].includes(order.paymentStatus) && (
               <button
                 type="button"

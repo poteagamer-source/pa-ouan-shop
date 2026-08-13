@@ -9,6 +9,7 @@ const PAYMENT_STATUSES = ["pending", "processing", "succeeded", "failed", "cance
 const FULFILLMENT_STATUSES = ["not_started", "queued", "cooking", "ready", "served", "cancelled"];
 const STAFF_TRANSITIONS = { queued: "cooking", cooking: "ready", ready: "served" };
 
+// อ่านออเดอร์พร้อมรายการสินค้า ท็อปปิ้ง และข้อมูลชำระเงินล่าสุด
 async function fetchOrders(whereSql = "", params = []) {
   const { rows } = await query(
     `SELECT
@@ -82,6 +83,7 @@ async function fetchOrders(whereSql = "", params = []) {
   }));
 }
 
+// GET /api/orders — ค้นหารายการออเดอร์ตามสถานะ วันที่ หรือโต๊ะ
 router.get("/", requireRole("manager", "kitchen", "waiter"), async (req, res, next) => {
   try {
     const { paymentStatus, fulfillmentStatus, status, date, table } = req.query;
@@ -123,6 +125,7 @@ router.get("/", requireRole("manager", "kitchen", "waiter"), async (req, res, ne
   }
 });
 
+// GET /api/orders/:id — อ่านออเดอร์เดียว (ลูกค้าใช้ติดตามสถานะได้)
 router.get("/:id", async (req, res, next) => {
   try {
     const orders = await fetchOrders("WHERE o.id = $1", [req.params.id]);
@@ -133,6 +136,7 @@ router.get("/:id", async (req, res, next) => {
   }
 });
 
+// POST /api/orders — ตรวจราคาจากฐานข้อมูลและบันทึกออเดอร์แบบ transaction
 router.post("/", async (req, res, next) => {
   const client = await pool.connect();
   let inTransaction = false;
@@ -147,6 +151,7 @@ router.post("/", async (req, res, next) => {
     const canonicalItems = [];
     let totalMinor = 0n;
 
+    // ไม่เชื่อราคา/ชื่อจาก frontend: โหลดข้อมูลจริงและคำนวณยอดใหม่ที่ server
     for (const item of items) {
       const quantity = Number(item.quantity ?? 1);
       if (!item.productId || !Number.isInteger(quantity) || quantity < 1 || quantity > 99) {
@@ -187,6 +192,7 @@ router.post("/", async (req, res, next) => {
       });
     }
 
+    // บันทึกหัวออเดอร์ รายการสินค้า และท็อปปิ้งให้สำเร็จหรือย้อนกลับพร้อมกัน
     await client.query("BEGIN");
     inTransaction = true;
     await client.query(
@@ -225,6 +231,7 @@ router.post("/", async (req, res, next) => {
   }
 });
 
+// PATCH /api/orders/:id/status — เลื่อนสถานะตามลำดับและสิทธิ์ของพนักงาน
 router.patch("/:id/status", requireRole("manager", "kitchen", "waiter"), async (req, res, next) => {
   try {
     const fulfillmentStatus = req.body?.fulfillmentStatus ?? req.body?.status;
