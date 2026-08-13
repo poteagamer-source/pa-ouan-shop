@@ -1,3 +1,4 @@
+/** การ์ดตัวเลขสรุปที่ใช้ซ้ำใน dashboard, เมนู, สต๊อก, ออเดอร์ และรายงาน */
 import type { ReactNode } from "react";
 
 interface StatCardProps {

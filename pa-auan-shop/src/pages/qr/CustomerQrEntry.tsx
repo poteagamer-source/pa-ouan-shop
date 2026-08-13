@@ -1,3 +1,4 @@
+/** ทางเข้า QR ลูกค้า ตรวจรหัสโต๊ะแล้วแสดง WelcomePage หรือ redirect เมื่อไม่ถูกต้อง */
 import { Navigate } from "react-router-dom";
 import { useTableGuard } from "../../context/TableContext";
 import { WelcomePage } from "../customer/WelcomePage";

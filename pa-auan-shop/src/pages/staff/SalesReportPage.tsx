@@ -1,3 +1,4 @@
+/** รายงานยอดขายรายวันจากออเดอร์ที่ชำระจริง พร้อมกราฟเวลาและ realtime refresh */
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { BellRing, Calendar, ChevronRight, FileCheck, FileText, Loader2 } from "lucide-react";
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
@@ -17,11 +18,13 @@ function displayTime(value: string) {
 
 /** รายงานนี้คำนวณจากออเดอร์ที่ Stripe ยืนยันการชำระเงินแล้วเท่านั้น */
 export function SalesReportPage() {
+  // หน้านี้แสดงเฉพาะยอดของวันที่ local ปัจจุบัน และเฉพาะ payment ที่สำเร็จ
   const [orders, setOrders] = useState<SalesOrder[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const today = localDate();
 
+  /** โหลดรายการขายจริงของวันนี้; summary ทั้งหมดคำนวณต่อบน frontend */
   const load = useCallback(async () => {
     try {
       setOrders(await fetchSales({ from: today, to: today }));
@@ -33,6 +36,7 @@ export function SalesReportPage() {
     }
   }, [today]);
 
+  // โหลดครั้งแรกและโหลดใหม่ทันทีเมื่อ backend ประกาศว่า orders เปลี่ยน
   useEffect(() => {
     void load();
     const unsubscribe = subscribeToUpdates((update) => {
@@ -46,6 +50,7 @@ export function SalesReportPage() {
   const total = orders.reduce((sum, order) => sum + order.total, 0);
   const average = orders.length ? total / orders.length : 0;
 
+  // สร้าง bucket 24 ชั่วโมงสำหรับกราฟ แม้ชั่วโมงที่ไม่มียอดก็ยังแสดงค่า 0
   const hourlySales = useMemo(() => {
     const values = Array.from({ length: 24 }, (_, hour) => ({ time: `${String(hour).padStart(2, "0")}:00`, value: 0 }));
     orders.forEach((order) => {
@@ -59,6 +64,7 @@ export function SalesReportPage() {
   const peak = hourlySales.reduce((best, row) => row.value > best.value ? row : best, hourlySales[0]);
   const latest = orders[0];
 
+  // UI: ตัวเลขวันนี้ → กราฟ/สรุป → ตารางรายการขาย
   return (
     <div className="max-w-6xl">
       <PageHeader title="รายงานยอดขาย" subtitle="ข้อมูลจริงจากออเดอร์ที่ลูกค้าชำระเงินสำเร็จ อัปเดตแบบเรียลไทม์" />

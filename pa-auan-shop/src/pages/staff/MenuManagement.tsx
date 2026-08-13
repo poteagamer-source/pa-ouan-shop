@@ -1,3 +1,4 @@
+/** CRUD เมนูและท็อปปิ้ง พร้อมราคา สถานะ สต๊อกย่อ และการค้นหา/แบ่งหน้า */
 import { useEffect, useMemo, useState, type FormEvent, type KeyboardEvent } from "react";
 import { Search, Plus, CheckCircle2, XCircle, Grid2x2, Package, Pencil, Trash2, X, TriangleAlert } from "lucide-react";
 import { PageHeader } from "../../components/staff/PageHeader";

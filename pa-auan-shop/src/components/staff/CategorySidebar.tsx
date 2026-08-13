@@ -1,3 +1,4 @@
+/** Sidebar หมวดสินค้าสำหรับหน้าจัดการเมนู/สต๊อก รองรับหมวดพิเศษ "toppings" */
 import { Plus, Package } from "lucide-react";
 import type { CategoryId } from "../../types";
 import { categoryMeta } from "../../config/constants";

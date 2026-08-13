@@ -1,3 +1,4 @@
+/** หน้าแรกเลือกทางเข้าลูกค้า/พนักงาน และแสดงปุ่มเปลี่ยนภาษาก่อนเข้าสู่ระบบ */
 import { Link, useSearchParams } from "react-router-dom";
 import { QrCode, Smartphone } from "lucide-react";
 import { SHOP_SHORT } from "../config/constants";

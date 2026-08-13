@@ -1,3 +1,4 @@
+/** หน้าชำระเงิน: สร้างออเดอร์ครั้งเดียว สร้าง Stripe Checkout และ redirect ลูกค้า */
 import { useEffect, useMemo, useRef, useState } from "react";
 import { CreditCard, Loader2 } from "lucide-react";
 import { CustomerPageLayout } from "../../components/customer/CustomerPageLayout";
@@ -17,6 +18,7 @@ function formatMoney(value: number, currency: string) {
 }
 
 export function PaymentPage() {
+  // order เก็บ snapshot ที่ server สร้าง; submitting ป้องกันกดสร้าง session ซ้ำ
   const { tableId } = useTable();
   const paths = useCustomerPath();
   const { items, total, clearCart, setLastOrderId } = useCart();
@@ -25,6 +27,7 @@ export function PaymentPage() {
   const [error, setError] = useState<string | null>(null);
   const idempotencyKey = useRef(crypto.randomUUID());
 
+  // หากกลับมาหน้านี้พร้อม lastOrderId ให้โหลดออเดอร์เดิม ไม่สร้างออเดอร์ใหม่
   useEffect(() => {
     if (items.length > 0 || order) return;
     const previousOrderId = window.localStorage.getItem(`lastOrderId:${tableId}`);
@@ -36,6 +39,7 @@ export function PaymentPage() {
       .catch(() => {});
   }, [items.length, order, tableId]);
 
+  // แปลง OrderItem จาก API กลับเป็นรูปแบบ CartItem เพื่อใช้ OrderSummaryCard ร่วมกัน
   const summaryItems = useMemo<CartItem[]>(() => {
     if (!order) return items;
     return order.items.map((item) => ({

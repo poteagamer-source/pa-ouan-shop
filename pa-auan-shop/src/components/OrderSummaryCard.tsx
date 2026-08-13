@@ -1,3 +1,4 @@
+/** การ์ดสรุปตะกร้า/ออเดอร์ แยกแต่ละเมนู ท็อปปิ้ง อุณหภูมิ และยอดรวม */
 import type { CartItem } from "../types";
 import { useLanguage } from "../context/LanguageContext";
 

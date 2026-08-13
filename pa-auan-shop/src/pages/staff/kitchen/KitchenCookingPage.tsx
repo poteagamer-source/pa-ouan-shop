@@ -1,3 +1,4 @@
+/** หน้าครัวสถานะ cooking: อ่าน context และเลื่อนออเดอร์ไป ready */
 import { PageHeader } from "../../../components/staff/PageHeader";
 import { StatusOverviewCards } from "../../../components/staff/kitchen/StatusOverviewCards";
 import { SortDropdown } from "../../../components/staff/kitchen/SortDropdown";

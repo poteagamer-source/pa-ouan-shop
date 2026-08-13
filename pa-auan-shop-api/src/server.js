@@ -1,3 +1,4 @@
+/** จุดเริ่ม Express API: middleware, routes, static frontend, error handler และ HTTP server */
 import "dotenv/config";
 import express from "express";
 import cors from "cors";

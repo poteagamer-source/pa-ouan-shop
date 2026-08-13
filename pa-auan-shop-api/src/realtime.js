@@ -1,3 +1,4 @@
+/** Server-Sent Events hub ส่งสัญญาณ resource changed ให้หน้าพนักงานโหลดข้อมูลล่าสุด */
 import { Router } from "express";
 
 const clients = new Set();

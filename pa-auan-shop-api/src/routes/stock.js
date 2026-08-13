@@ -1,3 +1,4 @@
+/** API สต๊อกสินค้าและท็อปปิ้ง: add/update/adjust/delete และคำนวณสถานะ low */
 import { Router } from "express";
 import { query } from "../db.js";
 import { publishUpdate } from "../realtime.js";

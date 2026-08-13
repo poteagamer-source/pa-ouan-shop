@@ -1,3 +1,4 @@
+/** เมนูตาม role และตัวสลับโมดูล manager/kitchen/waiter ทั้ง desktop และ mobile */
 import { NavLink } from "react-router-dom";
 import {
   Home,

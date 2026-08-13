@@ -1,3 +1,4 @@
+/** แปลง payload/signature ของ Stripe หรือ generic provider เป็น event รูปแบบกลาง */
 import { createHmac, timingSafeEqual } from "node:crypto";
 
 function equalHex(actual, expected) {

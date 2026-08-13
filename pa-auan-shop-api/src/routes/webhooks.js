@@ -1,3 +1,4 @@
+/** Endpoint webhook รับ event จาก Stripe/generic ตรวจ signature แล้วส่งให้ processor */
 import { Router } from "express";
 import { processPaymentEvent } from "../payments/processor.js";
 import { verifyAndNormalizeWebhook } from "../payments/webhookAdapters.js";

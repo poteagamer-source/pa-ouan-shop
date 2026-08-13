@@ -1,3 +1,4 @@
+/** หน้าเมนูลูกค้า: โหลดสินค้าที่เปิดขาย กรองตามหมวด/แนะนำ/ขายดี และรับ realtime */
 import { useEffect, useMemo, useState } from "react";
 import { CategoryChips } from "../../components/customer/CategoryChips";
 import { CustomerPageLayout } from "../../components/customer/CustomerPageLayout";

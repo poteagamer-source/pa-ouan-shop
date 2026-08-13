@@ -1,3 +1,4 @@
+/** หน้า legacy ตัวอย่าง waiter ไม่ได้ถูก route หลักใช้; หน้าจริงอยู่ pages/staff/waiter */
 import { Check } from "lucide-react";
 import { images } from "../../data/images";
 

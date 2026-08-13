@@ -1,3 +1,4 @@
+/** หน้าตะกร้า: แสดงรายการแยกการ์ด ยอดรวม และทางกลับเมนู/ไปชำระเงิน */
 import { Link } from "react-router-dom";
 import { CustomerPageLayout } from "../../components/customer/CustomerPageLayout";
 import { OrderSummaryCard } from "../../components/OrderSummaryCard";

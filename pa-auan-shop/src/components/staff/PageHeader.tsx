@@ -1,3 +1,4 @@
+/** หัวหน้ามาตรฐานของหลังบ้าน; title/subtitle ถูกส่งผ่านระบบแปลภาษาอัตโนมัติ */
 interface PageHeaderProps {
   title: string;
   subtitle?: string;

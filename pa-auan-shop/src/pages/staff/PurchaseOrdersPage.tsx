@@ -1,3 +1,4 @@
+/** รายการสั่งซื้อที่ชำระสำเร็จจาก API พร้อมรายละเอียดด้านข้างและ realtime refresh */
 import { useEffect, useMemo, useState } from "react";
 import { Banknote, CheckCircle, ChevronRight, FileText, Loader2, Package } from "lucide-react";
 import { PageHeader } from "../../components/staff/PageHeader";

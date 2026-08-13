@@ -1,3 +1,4 @@
+/** เมนูล่างมือถือ: หน้าหลัก แนะนำ ปุ่มเพิ่ม และขายดี พร้อมรักษา path เลขโต๊ะ */
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import type { ReactNode } from "react";
 import { Home, Heart, Plus, Sparkles } from "lucide-react";

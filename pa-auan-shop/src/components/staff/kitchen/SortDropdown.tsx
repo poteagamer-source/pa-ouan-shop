@@ -1,3 +1,4 @@
+/** ปุ่ม UI สำหรับเรียงเวลา; หากต้องเพิ่มการเรียงจริงให้รับ value/onChange ผ่าน props ที่ไฟล์นี้ */
 import { ArrowUpDown, ChevronDown } from "lucide-react";
 
 export function SortDropdown() {

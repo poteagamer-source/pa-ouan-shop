@@ -1,3 +1,4 @@
+/** หน้าต้อนรับหลังสแกน QR โต๊ะ ก่อนเริ่มเลือกเมนู */
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { CustomerPageLayout } from "../../components/customer/CustomerPageLayout";

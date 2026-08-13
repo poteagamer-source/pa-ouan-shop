@@ -1,3 +1,4 @@
+/** แถวสรุปออเดอร์พร้อมเสิร์ฟ ใช้ในหน้าครัวเพื่อส่งต่องานให้ waiter */
 import { Clock } from "lucide-react";
 import type { KitchenOrder } from "../../../context/KitchenOrdersContext";
 

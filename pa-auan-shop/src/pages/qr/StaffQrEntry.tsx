@@ -1,3 +1,4 @@
+/** ทางเข้า QR พนักงาน: login และ setup manager คนแรกเมื่อฐานข้อมูลยังว่าง */
 import { useEffect, useState, type FormEvent } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
 import { Loader2, LockKeyhole, LogIn, QrCode, UserRound } from "lucide-react";

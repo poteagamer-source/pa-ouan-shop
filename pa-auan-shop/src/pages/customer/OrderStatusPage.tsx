@@ -1,3 +1,4 @@
+/** หน้าติดตามออเดอร์หลัง Stripe: poll สถานะและแสดง progress ชำระเงิน→เสิร์ฟ */
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { CheckCircle2, Circle, Clock3, Loader2, Printer } from "lucide-react";
@@ -67,6 +68,7 @@ function WorkflowProgress({ order }: { order: Order }) {
 }
 
 export function OrderStatusPage() {
+  // ใช้ lastOrderId จาก CartContext เพื่อไม่ต้องเปิด endpoint รายการออเดอร์ทั้งหมดแก่ลูกค้า
   const { tableId } = useTable();
   const navigate = useNavigate();
   const paths = useCustomerPath();
@@ -75,9 +77,11 @@ export function OrderStatusPage() {
   const [order, setOrder] = useState<Order | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  // poll ออเดอร์เดียวเป็น fallback เพราะ Stripe PromptPay และ webhook เป็น asynchronous
   useEffect(() => {
     if (!orderId) return;
     let active = true;
+    /** โหลดสถานะล่าสุด; เมื่อจ่ายสำเร็จแล้วคง polling ต่อเพื่อรับสถานะครัว/เสิร์ฟ */
     const load = async () => {
       try {
         const latest = await fetchOrder(orderId);
@@ -97,6 +101,7 @@ export function OrderStatusPage() {
     };
   }, [orderId]);
 
+  // แปลง snapshot จาก backend ให้ component สรุปรายการเดิมใช้ได้
   const summaryItems = useMemo<CartItem[]>(() => {
     if (!order) return [];
     return order.items.map((item) => ({

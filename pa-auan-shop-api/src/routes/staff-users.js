@@ -1,3 +1,4 @@
+/** CRUD บัญชีพนักงานสำหรับ manager รวมการเปลี่ยน role/password/active */
 import { Router } from "express";
 import { hashPassword, requireRole, STAFF_ROLES } from "../auth.js";
 import { query } from "../db.js";

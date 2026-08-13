@@ -1,3 +1,4 @@
+/** ศูนย์กลางออเดอร์ครัว/waiter: fetch, realtime, polling, mapping status และคำสั่งเลื่อนขั้นตอน */
 import {
   createContext,
   useCallback,

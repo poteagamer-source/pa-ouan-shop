@@ -1,3 +1,4 @@
+/** ประวัติ waiter: ตารางออเดอร์ที่เสิร์ฟแล้ว กราฟสัดส่วน และช่วงเวลาพีค */
 import { useMemo } from "react";
 import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
 import { PageHeader } from "../../../components/staff/PageHeader";

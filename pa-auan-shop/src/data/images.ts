@@ -21,3 +21,4 @@ import type { CategoryId } from "../types";
 export function foodImageByCategory(category: CategoryId): string {
   return images.food[category];
 }
+/** registry path รูป static ที่ใช้ซ้ำ; ไฟล์จริงอยู่ใน public/images */

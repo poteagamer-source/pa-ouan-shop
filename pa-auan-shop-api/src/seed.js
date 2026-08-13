@@ -1,3 +1,4 @@
+/** คำสั่ง db:seed สำหรับใส่หมวด เมนู ท็อปปิ้ง และสต๊อกตั้งต้น */
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";

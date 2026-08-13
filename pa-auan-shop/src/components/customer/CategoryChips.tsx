@@ -1,3 +1,4 @@
+/** แถบเลือกหมวดเมนูของลูกค้า; รายการหมวดโหลดจาก CategoriesContext */
 import type { CategoryId } from "../../types";
 import { useCategories } from "../../context/CategoriesContext";
 import { useLanguage } from "../../context/LanguageContext";

@@ -1,3 +1,4 @@
+/** การ์ดขนาดย่อของออเดอร์ที่เสิร์ฟแล้ว ใช้แสดงประวัติล่าสุด */
 import type { KitchenOrder } from "../../../context/KitchenOrdersContext";
 
 export function ServedMiniCard({ order }: { order: KitchenOrder }) {

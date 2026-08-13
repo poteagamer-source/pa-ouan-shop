@@ -1,3 +1,4 @@
+/** ปุ่มสลับภาษาไทย/อังกฤษ; แก้รูปแบบปุ่มได้ที่นี่ ส่วนคำแปลอยู่ LanguageContext */
 import { Languages } from "lucide-react";
 import { useLanguage } from "../context/LanguageContext";
 

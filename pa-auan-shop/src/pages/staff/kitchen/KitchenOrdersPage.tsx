@@ -1,3 +1,4 @@
+/** หน้าออเดอร์ใหม่สถานะ queued ให้ครัวกดเริ่มทำอาหาร */
 import { PageHeader } from "../../../components/staff/PageHeader";
 import { StatusOverviewCards } from "../../../components/staff/kitchen/StatusOverviewCards";
 import { SortDropdown } from "../../../components/staff/kitchen/SortDropdown";

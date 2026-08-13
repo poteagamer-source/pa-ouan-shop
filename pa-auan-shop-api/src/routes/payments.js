@@ -1,3 +1,4 @@
+/** API ใต้ /orders/:id/payments สำหรับสร้าง checkout และอ่านประวัติ payment */
 import { randomUUID } from "node:crypto";
 import { Router } from "express";
 import { query } from "../db.js";

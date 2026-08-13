@@ -1,3 +1,4 @@
+/** รวม schema.sql + seed.sql เป็น neon-import.sql สำหรับนำเข้าฐานข้อมูลด้วยตนเอง */
 import { readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";

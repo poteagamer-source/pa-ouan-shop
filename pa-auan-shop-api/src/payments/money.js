@@ -1,3 +1,4 @@
+/** Utility เงินแบบ minor units ป้องกัน floating-point ผิดพลาดระหว่าง DB และ Stripe */
 const ZERO_DECIMAL = new Set([
   "BIF", "CLP", "DJF", "GNF", "ISK", "JPY", "KMF", "KRW", "PYG", "RWF", "UGX", "VND", "VUV", "XAF", "XOF", "XPF",
 ]);

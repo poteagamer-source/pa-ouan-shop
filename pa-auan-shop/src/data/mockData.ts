@@ -1,3 +1,4 @@
+/** ข้อมูลจำลองเก่าสำหรับ component legacy เท่านั้น; หน้าระบบจริงต้องโหลดผ่าน API */
 import type { CategoryId, Product, Topping } from "../types";
 import { foodImageByCategory, images } from "./images";
 
@@ -280,3 +281,4 @@ export const kitchenStatusMeta: Record<
   ready: { label: "พร้อมเสิร์ฟ", text: "text-green-600", bg: "bg-green-50", border: "border-green-400", dot: "bg-green-500" },
   served: { label: "เสิร์ฟแล้ว", text: "text-blue-500", bg: "bg-blue-50", border: "border-blue-400", dot: "bg-blue-500" },
 };
+/** ข้อมูลจำลองเก่าสำหรับ component legacy เท่านั้น; หน้าระบบจริงต้องโหลดผ่าน API */

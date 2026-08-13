@@ -1,3 +1,4 @@
+/** CRUD บัญชีพนักงาน: เพิ่ม แก้ role รีเซ็ตรหัสผ่าน เปิด/ปิดบัญชี และป้องกันแก้ตัวเองผิดสิทธิ์ */
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
 import { CheckCircle2, Loader2, Pencil, ShieldCheck, UserPlus, Users, X, XCircle } from "lucide-react";
 import { PageHeader } from "../../components/staff/PageHeader";
@@ -9,6 +10,7 @@ const ROLE_LABEL: Record<StaffRole, string> = { manager: "ผู้จัดก�
 const EMPTY_FORM = { username: "", displayName: "", password: "", role: "kitchen" as StaffRole };
 
 export function StaffManagementPage() {
+  // -------------------- ข้อมูลบัญชี, ฟอร์มเพิ่ม, modal แก้ไข และ error --------------------
   const { user: currentUser } = useStaffAuth();
   const [usersList, setUsersList] = useState<ManagedStaffUser[]>([]);
   const [form, setForm] = useState(EMPTY_FORM);
@@ -17,18 +19,21 @@ export function StaffManagementPage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  /** โหลดบัญชีทั้งหมดใหม่หลัง create/update/toggle เพื่อยึดข้อมูล server เป็นหลัก */
   const load = useCallback(async () => {
     try { setUsersList(await fetchStaffUsers()); setError(null); }
     catch (err) { setError(err instanceof Error ? err.message : "โหลดบัญชีพนักงานไม่สำเร็จ"); }
   }, []);
   useEffect(() => { void load(); }, [load]);
 
+  // ตัวเลขสรุปด้านบนคำนวณจาก usersList ปัจจุบัน ไม่บันทึกซ้ำใน state
   const counts = useMemo(() => ({
     active: usersList.filter((item) => item.active).length,
     inactive: usersList.filter((item) => !item.active).length,
     managers: usersList.filter((item) => item.active && item.role === "manager").length,
   }), [usersList]);
 
+  /** submit ฟอร์มเพิ่มพนักงาน; backend hash รหัสผ่านและตรวจ username ซ้ำ */
   const create = async (event: FormEvent) => {
     event.preventDefault(); setBusy(true); setError(null);
     try { await createStaffUser(form); setForm(EMPTY_FORM); await load(); }
@@ -42,6 +47,7 @@ export function StaffManagementPage() {
     setError(null);
   };
 
+  /** บันทึกชื่อ/role และเปลี่ยนรหัสผ่านเฉพาะเมื่อกรอกค่าใหม่ */
   const saveEdit = async (event: FormEvent) => {
     event.preventDefault();
     if (!editing) return;
@@ -59,6 +65,7 @@ export function StaffManagementPage() {
     finally { setBusy(false); }
   };
 
+  /** เปิด/ปิดบัญชี; ไม่ลบบัญชีเพื่อรักษาประวัติและเปิดกลับได้ */
   const toggle = async (staff: ManagedStaffUser) => {
     setBusy(true); setError(null);
     try {
@@ -68,6 +75,7 @@ export function StaffManagementPage() {
     finally { setBusy(false); }
   };
 
+  // UI ตามลำดับ: header → stat cards → ฟอร์มเพิ่ม → mobile cards/desktop table → edit modal
   return <div className="max-w-6xl">
     <PageHeader title="จัดการพนักงานและ Role" subtitle="เพิ่มพนักงาน เปลี่ยนหน้าที่ รีเซ็ตรหัสผ่าน และปิดบัญชีเมื่อพนักงานออก" />
     {error && <p className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">{error}</p>}

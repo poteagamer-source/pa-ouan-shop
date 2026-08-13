@@ -1,3 +1,4 @@
+/** การ์ดออเดอร์สถานะ cooking พร้อมปุ่มเลื่อนไป ready และสถานะกำลังบันทึก */
 import { Clock, CheckCircle2 } from "lucide-react";
 import type { KitchenOrder } from "../../../context/KitchenOrdersContext";
 

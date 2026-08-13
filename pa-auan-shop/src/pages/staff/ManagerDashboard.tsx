@@ -1,3 +1,4 @@
+/** Dashboard ผู้จัดการ: สรุปออเดอร์วันนี้ ยอดขาย สต๊อก และสถานะ workflow แบบ realtime */
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { AlertTriangle, BellRing, FileText, Package } from "lucide-react";
@@ -23,11 +24,13 @@ function money(value: number, currency = "THB") {
 }
 
 export function ManagerDashboard() {
+  // รวมข้อมูลสามแหล่ง: orders วันนี้, stock และ sales summary
   const [orders, setOrders] = useState<Order[]>([]);
   const [stock, setStock] = useState<StockItem[]>([]);
   const [summary, setSummary] = useState<SalesSummary | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  /** โหลดข้อมูล dashboard แบบขนานเพื่อลดเวลารอ และแทนค่าทั้งชุดเมื่อสำเร็จ */
   const load = useCallback(async () => {
     const today = localDate();
     try {
@@ -45,6 +48,7 @@ export function ManagerDashboard() {
     }
   }, []);
 
+  // รับ realtime สำหรับ orders/stock/products และมี polling สำรอง
   useEffect(() => {
     void load();
     const unsubscribe = subscribeToUpdates((update) => {
@@ -57,6 +61,7 @@ export function ManagerDashboard() {
     };
   }, [load]);
 
+  // แยกออเดอร์ที่ผ่าน payment flow ก่อนนำไปนับสถานะงานร้าน
   const paidOrders = useMemo(() => orders.filter((order) => ["succeeded", "partially_refunded", "refunded"].includes(order.paymentStatus)), [orders]);
   const counts = useMemo(() => ({
     queued: paidOrders.filter((order) => order.fulfillmentStatus === "queued").length,

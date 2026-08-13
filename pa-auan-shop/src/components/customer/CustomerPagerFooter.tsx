@@ -1,3 +1,4 @@
+/** ปุ่มก่อนหน้า/ถัดไปด้านล่าง ใช้เลื่อนหมวดหรือพากลับไปหน้าที่เหมาะกับ customer flow */
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useCategories } from "../../context/CategoriesContext";

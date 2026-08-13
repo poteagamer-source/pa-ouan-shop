@@ -1,3 +1,4 @@
+/** ภาพรวมครัว: จำนวนทุกสถานะ รายการล่าสุด งานพร้อมเสิร์ฟ และคำอธิบายสี */
 import { ChefHat, ConciergeBell } from "lucide-react";
 import { PageHeader } from "../../../components/staff/PageHeader";
 import { StatusOverviewCards } from "../../../components/staff/kitchen/StatusOverviewCards";

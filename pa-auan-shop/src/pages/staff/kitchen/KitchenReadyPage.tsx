@@ -1,3 +1,4 @@
+/** หน้าออเดอร์ ready เพื่อให้ครัวตรวจรายการที่รอ waiter นำไปเสิร์ฟ */
 import { CheckCircle2, ConciergeBell } from "lucide-react";
 import { PageHeader } from "../../../components/staff/PageHeader";
 import { StatusOverviewCards } from "../../../components/staff/kitchen/StatusOverviewCards";

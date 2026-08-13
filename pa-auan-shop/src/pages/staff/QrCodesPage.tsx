@@ -1,3 +1,4 @@
+/** หน้าสำหรับผู้จัดการสร้าง URL/QR แยกตามโต๊ะและ QR ทางเข้า staff */
 import { QrCode } from "lucide-react";
 import {
   TABLE_IDS,

@@ -1,3 +1,4 @@
+/** ชนิดข้อมูลกลางของ frontend ให้ context, API และ component ใช้รูปแบบเดียวกัน */
 export type CategoryId =
   | "bualoy"
   | "chaokuay"

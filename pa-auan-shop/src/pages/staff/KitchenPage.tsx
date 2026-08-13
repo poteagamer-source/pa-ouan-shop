@@ -1,3 +1,4 @@
+/** หน้า legacy ตัวอย่างครัว ไม่ได้ถูก route หลักใช้; หน้าจริงอยู่ pages/staff/kitchen */
 import { Check } from "lucide-react";
 import { images } from "../../data/images";
 

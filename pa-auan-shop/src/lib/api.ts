@@ -1,3 +1,4 @@
+/** Client API กลางของ frontend: auth, catalog, stock, orders, payments, sales และ realtime */
 import type {
   CartItem,
   CategoryId,

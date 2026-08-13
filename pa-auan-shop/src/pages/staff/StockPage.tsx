@@ -1,3 +1,4 @@
+/** จัดการสต๊อกสินค้า/ท็อปปิ้ง: เพิ่มเข้าสต๊อก ปรับจำนวน หน่วย สถานะ และลบแถวสต๊อก */
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
 import { CheckCircle2, Grid2x2, Loader2, Minus, Package, Pencil, Plus, Search, Trash2, X, XCircle } from "lucide-react";
 import { PageHeader } from "../../components/staff/PageHeader";
@@ -16,6 +17,7 @@ type InventoryItem = (StockItem | ToppingStockItem) & { kind: Tab };
 type CatalogItem = Product | Topping;
 
 export function StockPage() {
+  // -------------------- tab, filter, ข้อมูล stock และ modal เพิ่ม/แก้ไข --------------------
   const [tab, setTab] = useState<Tab>("product");
   const [products, setProducts] = useState<StockItem[]>([]);
   const [toppings, setToppings] = useState<ToppingStockItem[]>([]);
@@ -31,6 +33,7 @@ export function StockPage() {
   const [qty, setQty] = useState("0");
   const [unit, setUnit] = useState("ถ้วย");
 
+  /** โหลดทะเบียนสินค้า/ท็อปปิ้งและแถวสต๊อก เพื่อรู้ทั้งรายการที่มีและยังไม่ได้เพิ่มสต๊อก */
   const load = useCallback(async () => {
     try {
       const [stock, toppingStock, allProducts, allToppings] = await Promise.all([fetchStock(), fetchToppingStock(), fetchProducts(), fetchToppings()]);
@@ -39,6 +42,7 @@ export function StockPage() {
     finally { setLoading(false); }
   }, []);
 
+  // realtime ทำให้การแก้จากหน้าเมนูหรือเครื่องอื่นสะท้อนมาหน้านี้
   useEffect(() => {
     void load();
     return subscribeToUpdates((update) => { if (update.resource === "stock" || update.resource === "products") void load(); });
@@ -49,6 +53,7 @@ export function StockPage() {
   const available: CatalogItem[] = tab === "product" ? productCatalog.filter((item) => !productIds.has(item.id)) : toppingCatalog.filter((item) => !toppingIds.has(item.id));
   const items: InventoryItem[] = tab === "product" ? products.map((item) => ({ ...item, kind: "product" })) : toppings.map((item) => ({ ...item, kind: "topping" }));
   const shown = items.filter((item) => (tab === "topping" || (item as StockItem).category === category) && item.name.toLowerCase().includes(query.trim().toLowerCase()));
+  // สรุป all/enough/low/out จาก tab ที่เลือก โดย out คือ qty <= 0
   const counts = useMemo(() => {
     const result = Object.fromEntries((Object.keys(categoryMeta) as CategoryId[]).map((id) => [id, 0])) as Record<CategoryId, number>;
     products.forEach((item) => { result[item.category] += 1; }); return result;
@@ -82,6 +87,7 @@ export function StockPage() {
     catch (err) { setError(err instanceof Error ? err.message : "ปรับจำนวนไม่สำเร็จ"); }
     finally { setBusy(false); }
   };
+  /** เปิด/ปิดขายในตาราง stock; หน้าลูกค้าเห็นเฉพาะ active และ qty > 0 */
   const toggle = async (item: InventoryItem) => {
     setBusy(true); try { if (item.kind === "product") await updateStock(item.id, { active: !item.active }); else await updateToppingStock(item.id, { active: !item.active }); await load(); }
     catch (err) { setError(err instanceof Error ? err.message : "เปลี่ยนสถานะไม่สำเร็จ"); } finally { setBusy(false); }

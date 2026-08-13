@@ -1,3 +1,4 @@
+/** งาน waiter ปัจจุบัน: รับเฉพาะออเดอร์ ready และยืนยันเป็น served */
 import { useState } from "react";
 import { ConciergeBell, CheckCircle2 } from "lucide-react";
 import { PageHeader } from "../../../components/staff/PageHeader";

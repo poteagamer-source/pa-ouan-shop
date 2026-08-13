@@ -1,3 +1,4 @@
+/** API login/logout/session/setup manager คนแรกสำหรับพนักงาน */
 import { Router } from "express";
 import { createSession, clearSessionCookie, hashPassword, revokeSession, sessionCookie, verifyPassword } from "../auth.js";
 import { pool, query } from "../db.js";

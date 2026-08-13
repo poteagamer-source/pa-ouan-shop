@@ -1,3 +1,4 @@
+/** การ์ดจำนวนออเดอร์ 4 สถานะ พร้อมลิงก์ไปหน้ารายการของสถานะนั้น */
 import { FileText, Flame, ConciergeBell, CheckCircle2 } from "lucide-react";
 import { NavLink } from "react-router-dom";
 import { kitchenStatusMeta, type KitchenOrderStatus } from "../../../config/constants";

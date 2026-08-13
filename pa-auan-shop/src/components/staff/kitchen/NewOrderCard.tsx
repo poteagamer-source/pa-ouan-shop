@@ -1,3 +1,4 @@
+/** การ์ดออเดอร์เข้าใหม่ (queued) พร้อมรายละเอียดและปุ่มเริ่มทำอาหาร */
 import { ChefHat, ChevronRight } from "lucide-react";
 import type { KitchenOrder } from "../../../context/KitchenOrdersContext";
 

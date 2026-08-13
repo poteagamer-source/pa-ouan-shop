@@ -1,3 +1,4 @@
+/** หน้าปรับแต่งเมนู: จำนวน อุณหภูมิ ท็อปปิ้ง และเพิ่ม snapshot ลงตะกร้า */
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Minus, Plus } from "lucide-react";

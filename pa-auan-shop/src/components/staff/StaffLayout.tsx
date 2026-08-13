@@ -1,3 +1,4 @@
+/** Layout หลังบ้านร่วม: sidebar บน desktop, header บน mobile และ Outlet ของหน้าปัจจุบัน */
 import { Outlet } from "react-router-dom";
 import { Search } from "lucide-react";
 import { StaffSidebar } from "./StaffSidebar";

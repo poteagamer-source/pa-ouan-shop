@@ -1,3 +1,4 @@
+/** กรอบหน้าจอมือถือและพื้นหลังลายน้ำ ใช้ครอบทุกหน้าลูกค้าให้ความกว้างสม่ำเสมอ */
 import type { ReactNode } from "react";
 import { images } from "../../data/images";
 

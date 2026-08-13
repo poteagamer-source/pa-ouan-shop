@@ -1,3 +1,4 @@
+/** PostgreSQL connection pool กลาง; ทุก route ใช้ query helper หรือ pool สำหรับ transaction */
 import pg from "pg";
 import "dotenv/config";
 

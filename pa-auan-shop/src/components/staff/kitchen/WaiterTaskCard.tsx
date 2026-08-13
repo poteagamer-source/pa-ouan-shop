@@ -1,3 +1,4 @@
+/** การ์ดงาน waiter: แสดงโต๊ะ รายการ เวลารอ และปุ่มยืนยันเสิร์ฟแล้ว */
 import { AlertCircle } from "lucide-react";
 import type { KitchenOrder } from "../../../context/KitchenOrdersContext";
 

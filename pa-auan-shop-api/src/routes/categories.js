@@ -1,3 +1,4 @@
+/** API อ่านหมวดเมนูที่ frontend ใช้สร้าง chips และ sidebar */
 import { Router } from "express";
 import { query } from "../db.js";
 

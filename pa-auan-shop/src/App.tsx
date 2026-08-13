@@ -1,3 +1,4 @@
+/** Route tree หลัก กำหนด Provider, guards และหน้าที่ role แต่ละประเภทเข้าถึงได้ */
 import { BrowserRouter, Navigate, Outlet, Route, Routes } from "react-router-dom";
 import { CartProvider } from "./context/CartContext";
 import { CategoriesProvider } from "./context/CategoriesContext";

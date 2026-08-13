@@ -1,3 +1,4 @@
+/** คำสั่ง db:migrate: รัน schema.sql ทุก deploy ซึ่งเขียนให้ทำซ้ำได้อย่างปลอดภัย */
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";

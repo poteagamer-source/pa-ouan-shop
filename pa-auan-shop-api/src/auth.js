@@ -1,3 +1,4 @@
+/** Authentication middleware: session cookie, password hashing และ requireRole สำหรับ routes */
 import { createHash, randomBytes, scrypt as scryptCallback, timingSafeEqual } from "node:crypto";
 import { promisify } from "node:util";
 import { query } from "./db.js";

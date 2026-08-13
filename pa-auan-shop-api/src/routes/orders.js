@@ -1,3 +1,4 @@
+/** API ออเดอร์: สร้างจากตะกร้า อ่านสถานะ และเลื่อน fulfillment ตาม role */
 import { Router } from "express";
 import { pool, query } from "../db.js";
 import { decimalToMinor, minorToNumber, serializeMinor, shopCurrency } from "../payments/money.js";

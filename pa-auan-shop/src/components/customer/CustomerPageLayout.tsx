@@ -1,3 +1,4 @@
+/** โครงหน้าลูกค้ามาตรฐาน ประกอบ MobileShell + Header + เนื้อหา + pager/bottom nav */
 import type { ReactNode } from "react";
 import { CustomerHeader } from "./CustomerHeader";
 import { CustomerBottomNav } from "./CustomerBottomNav";

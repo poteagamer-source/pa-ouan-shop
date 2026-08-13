@@ -1,3 +1,4 @@
+/** ประมวลผล payment event ใน transaction: idempotency, verify ยอด, สถานะ และตัดสต๊อก */
 import { randomUUID } from "node:crypto";
 import { pool } from "../db.js";
 import { publishUpdate } from "../realtime.js";

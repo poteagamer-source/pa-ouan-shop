@@ -1,3 +1,4 @@
+/** CRUD ท็อปปิ้ง พร้อมสร้าง/ลบแถว topping_stock และกรองของที่ลูกค้าเลือกได้ */
 import { Router } from "express";
 import { pool, query } from "../db.js";
 import { publishUpdate } from "../realtime.js";

@@ -1,3 +1,4 @@
+/** Header ลูกค้า: ชื่อร้าน ภาษา โต๊ะ ช่องค้นหา รถเข็น และ badge จำนวนรายการ */
 import { Link, useLocation } from "react-router-dom";
 import { Menu, ShoppingCart } from "lucide-react";
 import { SHOP_NAME } from "../../config/constants";

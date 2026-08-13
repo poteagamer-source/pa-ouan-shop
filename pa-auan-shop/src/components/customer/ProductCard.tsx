@@ -1,3 +1,4 @@
+/** การ์ดสินค้าใน grid: รูป ชื่อแปลภาษา ราคา และลิงก์ไปหน้ารายละเอียด */
 import { Link } from "react-router-dom";
 import type { Product } from "../../types";
 import { useCustomerPath } from "../../hooks/useCustomerPath";

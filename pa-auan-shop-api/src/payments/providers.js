@@ -1,3 +1,4 @@
+/** Payment provider adapters สำหรับสร้าง checkout session และดึงสถานะจากผู้ให้บริการ */
 const STRIPE_API = "https://api.stripe.com/v1";
 const STRIPE_METHODS = new Set([
   "card",

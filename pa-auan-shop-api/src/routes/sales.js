@@ -1,3 +1,4 @@
+/** API รายการขายและ summary; นับเฉพาะ payment status ที่ถือว่าได้รับเงินจริง */
 import { Router } from "express";
 import { query } from "../db.js";
 import { shopCurrency } from "../payments/money.js";

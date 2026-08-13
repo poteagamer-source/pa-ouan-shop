@@ -1,3 +1,4 @@
+/* Theme กลางและ utility CSS ของแอป; สี brand และ font ถูกนำไปใช้ผ่าน Tailwind classes */
 @import "tailwindcss";
 
 @theme {
