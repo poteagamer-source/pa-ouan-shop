@@ -9,6 +9,7 @@ import type { Product, Topping } from "../../types";
 import { useLanguage } from "../../context/LanguageContext";
 
 export function ProductDetailPage() {
+  // รหัสสินค้าอ่านจาก URL เช่น /order/A01/menu/bl1
   const { id } = useParams();
   const navigate = useNavigate();
   const paths = useCustomerPath();
@@ -26,6 +27,7 @@ export function ProductDetailPage() {
     { id: string; name: string; price: number }[]
   >([]);
 
+  // โหลดสินค้าและท็อปปิ้งที่ยังเปิดขาย/มีสต๊อก แยกกลุ่มราคา 5 และ 10 บาท
   useEffect(() => {
     if (!id) return;
     let active = true;
@@ -46,6 +48,7 @@ export function ProductDetailPage() {
     };
   }, [id]);
 
+  /** เลือกซ้ำเพื่อลบออก ไม่อนุญาตให้ท็อปปิ้งเดียวกันซ้ำในเมนูหนึ่งรายการ */
   const toggleTopping = (t: { id: string; name: string; price: number }) => {
     setSelectedToppings((prev) =>
       prev.some((x) => x.id === t.id)
@@ -57,6 +60,7 @@ export function ProductDetailPage() {
   const toppingTotal = selectedToppings.reduce((s, t) => s + t.price, 0);
   const lineTotal = product ? (product.price + toppingTotal) * qty : 0;
 
+  /** สร้าง snapshot ของรายการที่เลือกลงตะกร้า แล้วไปหน้าตะกร้า */
   const handleAdd = () => {
     if (!product) return;
     addItem({

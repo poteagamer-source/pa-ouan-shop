@@ -35,7 +35,7 @@ function LegacyCustomerRedirect() {
 
 export default function App() {
   return (
-    // Provider ส่วนกลางที่ทุกหน้าต้องใช้ร่วมกัน
+    // CategoriesProvider: รายการหมวดจาก API / CartProvider: ตะกร้าร่วมของ customer routes
     <CategoriesProvider>
     <CartProvider>
       <BrowserRouter>
@@ -69,6 +69,7 @@ export default function App() {
             </Route>
           </Route>
 
+          {/* Provider ออเดอร์ครัววางครอบทั้งครัวและ waiter เพื่อใช้ข้อมูล realtime ชุดเดียวกัน */}
           <Route
             element={
               <KitchenOrdersProvider>

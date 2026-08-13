@@ -28,7 +28,11 @@ export type StaffRole = "manager" | "kitchen" | "waiter";
 export interface StaffUser { id: number; username: string; displayName: string; role: StaffRole }
 export interface ManagedStaffUser extends StaffUser { active: boolean; createdAt: string }
 
-/** Subscribe to server-side changes. Returns a cleanup function. */
+/**
+ * เปิด Server-Sent Events ไปยัง backend เพื่อรับสัญญาณว่าข้อมูลชนิดใดเปลี่ยน
+ * event ไม่มีข้อมูลเต็ม หน้าแต่ละหน้าต้อง fetch ข้อมูลล่าสุดใหม่เอง
+ * ค่าที่คืนมาคือ cleanup function ซึ่ง useEffect ต้องเรียกตอน unmount
+ */
 export function subscribeToUpdates(onUpdate: (update: RealtimeUpdate) => void): () => void {
   const source = new EventSource(`${BASE_URL}/events`, { withCredentials: true });
   source.addEventListener("update", (event) => {
@@ -41,6 +45,7 @@ export function subscribeToUpdates(onUpdate: (update: RealtimeUpdate) => void): 
   return () => source.close();
 }
 
+/** Error กลางที่เก็บ HTTP status เพื่อให้หน้า login/route guard แยก 401, 403 ฯลฯ ได้ */
 export class ApiError extends Error {
   status: number;
   constructor(message: string, status: number) {
@@ -73,6 +78,7 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
 }
 
 /* -------------------------- การยืนยันตัวตนพนักงาน -------------------------- */
+// Cookie session ถูกส่งด้วย credentials: include ใน request() จึงไม่ต้องแนบ token ทีละฟังก์ชัน
 
 export function loginStaff(username: string, password: string): Promise<StaffUser> {
   return request("/auth/login", { method: "POST", body: JSON.stringify({ username, password }) });

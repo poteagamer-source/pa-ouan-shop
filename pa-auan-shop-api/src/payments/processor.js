@@ -3,6 +3,7 @@ import { pool } from "../db.js";
 import { publishUpdate } from "../realtime.js";
 
 export async function processPaymentEvent(event) {
+  // ตรวจข้อมูลขั้นต่ำก่อนเปิด transaction เพื่อปฏิเสธ webhook ที่ผูกกับออเดอร์ไม่ได้
   if (!event?.orderId || !event?.eventId || !event?.type) {
     throw Object.assign(new Error("Webhook event does not contain an order reference"), { status: 400 });
   }
@@ -10,6 +11,7 @@ export async function processPaymentEvent(event) {
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
+    // ล็อกออเดอร์และ payment ป้องกัน webhook ซ้ำ/มาพร้อมกันแก้ยอดชนกัน
     const { rows: orderRows } = await client.query(
       `SELECT id, amount_minor, currency, payment_status, fulfillment_status
        FROM orders WHERE id = $1 FOR UPDATE`,
@@ -47,6 +49,7 @@ export async function processPaymentEvent(event) {
       payment = rows[0];
     }
 
+    // payment_events เป็น idempotency log: provider + event_id เดิมประมวลผลได้ครั้งเดียว
     const { rows: insertedEvents } = await client.query(
       `INSERT INTO payment_events
         (provider, event_id, payment_id, order_id, transaction_id, event_type, payload)
@@ -68,6 +71,7 @@ export async function processPaymentEvent(event) {
       return { duplicate: true };
     }
 
+    // สำเร็จ: ตรวจยอด/สกุลเงิน → ยืนยันออเดอร์ → ส่งเข้าคิวครัว → ตัดสต๊อกครั้งเดียว
     if (event.type === "PAYMENT_SUCCEEDED") {
       if (!Number.isSafeInteger(Number(event.amountMinor))) {
         throw Object.assign(new Error("Webhook amountMinor is invalid"), { status: 400 });
@@ -124,11 +128,13 @@ export async function processPaymentEvent(event) {
           [event.orderId]
         );
       }
+    // PromptPay เป็น asynchronous: processing หมายถึงยังห้ามส่งงานเข้าครัว
     } else if (event.type === "PAYMENT_PROCESSING") {
       if (payment) await client.query("UPDATE payments SET status = 'processing', updated_at = now() WHERE id = $1", [payment.id]);
       if (["pending", "failed"].includes(order.payment_status)) {
         await client.query("UPDATE orders SET payment_status = 'processing' WHERE id = $1", [event.orderId]);
       }
+    // ล้มเหลว: เก็บรหัส/ข้อความจากผู้ให้บริการไว้สำหรับตรวจสอบ แต่ไม่ตัดสต๊อก
     } else if (event.type === "PAYMENT_FAILED") {
       if (payment) {
         await client.query(
@@ -140,6 +146,7 @@ export async function processPaymentEvent(event) {
       if (["pending", "processing", "failed"].includes(order.payment_status)) {
         await client.query("UPDATE orders SET payment_status = 'failed' WHERE id = $1", [event.orderId]);
       }
+    // คืนเงิน: เปลี่ยนสถานะทางการเงิน โดยประวัติออเดอร์และรายการอาหารยังคงอยู่
     } else if (["PAYMENT_PARTIALLY_REFUNDED", "PAYMENT_REFUNDED"].includes(event.type)) {
       const status = event.type === "PAYMENT_REFUNDED" ? "refunded" : "partially_refunded";
       const refunded = Number(event.refundedAmountMinor ?? 0);

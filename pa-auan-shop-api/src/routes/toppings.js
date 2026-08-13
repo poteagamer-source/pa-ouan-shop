@@ -5,6 +5,7 @@ import { requireRole } from "../auth.js";
 
 const router = Router();
 
+// แปลงค่าจาก PostgreSQL (numeric อาจเป็น string) ให้ frontend ใช้ number ได้ทันที
 const mapTopping = (r) => ({
   id: r.id,
   name: r.name,
@@ -14,6 +15,8 @@ const mapTopping = (r) => ({
 });
 
 // GET /api/toppings?tier=5   (ไม่ใส่ query = เอาทั้งหมด)
+// เมื่อมี tier: ส่งเฉพาะรายการเปิดขายและสต๊อกมากกว่า 0 ให้หน้าลูกค้า
+// เมื่อไม่มี tier: ส่งรายการทั้งหมดสำหรับหน้าจัดการ
 router.get("/", async (req, res, next) => {
   try {
     const { tier } = req.query;

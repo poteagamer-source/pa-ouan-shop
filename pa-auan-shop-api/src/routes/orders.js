@@ -10,6 +10,11 @@ const FULFILLMENT_STATUSES = ["not_started", "queued", "cooking", "ready", "serv
 const STAFF_TRANSITIONS = { queued: "cooking", cooking: "ready", ready: "served" };
 
 // อ่านออเดอร์พร้อมรายการสินค้า ท็อปปิ้ง และข้อมูลชำระเงินล่าสุด
+/**
+ * query กลางสำหรับอ่านออเดอร์
+ * รวมหัวออเดอร์, payment ล่าสุด, รายการอาหาร และท็อปปิ้งเป็น JSON ในครั้งเดียว
+ * whereSql ต้องสร้างจาก placeholder เท่านั้น ห้ามนำข้อความจากผู้ใช้มาต่อ SQL โดยตรง
+ */
 async function fetchOrders(whereSql = "", params = []) {
   const { rows } = await query(
     `SELECT
@@ -137,6 +142,11 @@ router.get("/:id", async (req, res, next) => {
 });
 
 // POST /api/orders — ตรวจราคาจากฐานข้อมูลและบันทึกออเดอร์แบบ transaction
+/**
+ * สร้างออเดอร์จากตะกร้าลูกค้า
+ * จุดสำคัญ: ไม่เชื่อชื่อหรือราคาจาก browser แต่โหลดราคา product/topping จาก DB แล้วคำนวณใหม่
+ * บันทึกทั้งหมดใน transaction เพื่อไม่ให้เกิดออเดอร์ครึ่งหนึ่งเมื่อ query ใด query หนึ่งผิดพลาด
+ */
 router.post("/", async (req, res, next) => {
   const client = await pool.connect();
   let inTransaction = false;
@@ -232,6 +242,7 @@ router.post("/", async (req, res, next) => {
 });
 
 // PATCH /api/orders/:id/status — เลื่อนสถานะตามลำดับและสิทธิ์ของพนักงาน
+/** เลื่อน fulfillment ตามลำดับและสิทธิ์ role; ออเดอร์ที่ยังไม่จ่ายเงินจะเลื่อนไม่ได้ */
 router.patch("/:id/status", requireRole("manager", "kitchen", "waiter"), async (req, res, next) => {
   try {
     const fulfillmentStatus = req.body?.fulfillmentStatus ?? req.body?.status;

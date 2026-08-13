@@ -8,6 +8,7 @@ import { createProduct, createTopping, deleteProduct, deleteTopping, fetchProduc
 import type { CategoryId, Product, ToppingStockItem } from "../../types";
 
 const PAGE_SIZE = 4;
+// จำนวนแถวสินค้าต่อหน้า ใช้เฉพาะหมวดสินค้าปกติ (ท็อปปิ้งแสดงทั้งหมดในหน้าเดียว)
 const categories = (Object.keys(categoryMeta) as CategoryId[]).map((id) => ({
   id,
   label: categoryMeta[id].label,
@@ -35,6 +36,7 @@ const emptyForm = (category: CategoryId): ProductForm => ({
 });
 
 export function MenuManagement() {
+  // -------------------- ข้อมูลหลักที่โหลดจาก API --------------------
   const [products, setProducts] = useState<Product[]>([]);
   const [toppings, setToppings] = useState<ToppingStockItem[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<MenuCategoryId>("bualoy");
@@ -46,10 +48,12 @@ export function MenuManagement() {
   const [editing, setEditing] = useState<Product | null>(null);
   const [form, setForm] = useState<ProductForm>(emptyForm("bualoy"));
   const [modalOpen, setModalOpen] = useState(false);
+  // -------------------- สถานะ modal สำหรับเพิ่ม/แก้ไขท็อปปิ้ง --------------------
   const [toppingModalOpen, setToppingModalOpen] = useState(false);
   const [editingTopping, setEditingTopping] = useState<ToppingStockItem | null>(null);
   const [toppingForm, setToppingForm] = useState<ToppingForm>(emptyToppingForm);
 
+  /** โหลดสินค้าและสต๊อกท็อปปิ้งพร้อมกัน เพื่อให้ตัวเลขสรุปและตารางตรงกับฐานข้อมูล */
   const loadProducts = async () => {
     setLoading(true);
     try {
@@ -65,6 +69,7 @@ export function MenuManagement() {
   };
 
   useEffect(() => {
+    // โหลดครั้งแรก, รับ realtime และ polling สำรองทุก 15 วินาทีสำหรับกรณี EventSource หลุด
     void loadProducts();
     const unsubscribe = subscribeToUpdates((update) => {
       if (["products", "toppings", "stock"].includes(update.resource)) void loadProducts();
@@ -79,6 +84,7 @@ export function MenuManagement() {
     };
   }, []);
 
+  // -------------------- ค่าที่คำนวณเพื่อแสดงผล ไม่ได้บันทึกลงฐานข้อมูล --------------------
   const categoryCounts = useMemo(() => {
     const counts = {} as Record<MenuCategoryId, number>;
     categories.forEach((category) => {
@@ -108,6 +114,7 @@ export function MenuManagement() {
     return term ? toppings.filter((item) => item.name.toLowerCase().includes(term)) : toppings;
   }, [query, toppings]);
 
+  // -------------------- เปิดหน้าต่างเพิ่มสินค้า/ท็อปปิ้งตามหมวดที่เลือก --------------------
   const openCreate = () => {
     if (selectedCategory === "toppings") {
       setEditingTopping(null);
@@ -126,6 +133,7 @@ export function MenuManagement() {
     setToppingModalOpen(true);
   };
 
+  /** เพิ่มท็อปปิ้งใหม่ หรือแก้ทั้งข้อมูลท็อปปิ้งและจำนวนสต๊อกของรายการเดิม */
   const saveTopping = async (event: FormEvent) => {
     event.preventDefault();
     const price = Number(toppingForm.price);
@@ -191,6 +199,7 @@ export function MenuManagement() {
     setModalOpen(true);
   };
 
+  /** ตรวจฟอร์มและเรียก create/update product; server เป็นผู้บันทึกค่าจริง */
   const saveProduct = async (event: FormEvent) => {
     event.preventDefault();
     const price = Number(form.price);
@@ -267,6 +276,7 @@ export function MenuManagement() {
     }
   };
 
+  // -------------------- UI: สรุปด้านบน → หมวดด้านซ้าย → ตาราง → modal --------------------
   return (
     <div className="max-w-6xl">
       <PageHeader title="จัดการสินค้า" subtitle="เพิ่ม ลบ หรือแก้ไขข้อมูลรายการสินค้าและราคา" />

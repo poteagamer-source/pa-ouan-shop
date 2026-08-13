@@ -2,6 +2,8 @@ import { createContext, useContext, useEffect, useMemo, useState, type ReactNode
 
 export type Language = "th" | "en";
 
+// พจนานุกรมกลาง: key เป็นข้อความไทยใน UI และ value เป็นคำแปลอังกฤษ
+// ชื่อสินค้า/ท็อปปิ้งจากฐานข้อมูลต้องเพิ่มไว้ที่นี่ด้วย หากต้องการให้ EN แปลชื่อรายการนั้น
 const translations: Record<string, string> = {
   "หน้าหลัก": "Home", "จัดการสินค้า": "Menu management", "รายการสั่งซื้อ": "Orders",
   "จัดการเมนูสินค้า": "Menu management", "รายการออเดอร์": "Orders",
@@ -80,10 +82,12 @@ const originalText = new WeakMap<Text, string>();
 const originalAttributes = new WeakMap<Element, Map<string, string>>();
 const translatedAttributes = ["placeholder", "title", "aria-label"];
 
+/** แปลข้อความที่ยังไม่ได้เรียก t() โดยแทนคำยาวก่อนเพื่อไม่ให้คำสั้นตัดคำผิด */
 function translateAll(value: string) {
   return translationEntries.reduce((result, [thai, english]) => result.replaceAll(thai, english), value);
 }
 
+/** fallback สำหรับข้อความเก่า: แปล text node และ attribute โดยเก็บต้นฉบับไว้ให้สลับกลับไทย */
 function updateDomLanguage(language: Language) {
   const root = document.body;
   if (!root) return;
@@ -132,6 +136,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     let applying = false;
     const apply = () => { if (applying) return; applying = true; updateDomLanguage(language); applying = false; };
     apply();
+    // เนื้อหา API/realtime อาจเข้าหลัง render จึงเฝ้าดู DOM แล้วแปลส่วนที่เพิ่มเข้ามา
     const observer = new MutationObserver(() => queueMicrotask(apply));
     observer.observe(document.body, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: translatedAttributes });
     return () => observer.disconnect();
