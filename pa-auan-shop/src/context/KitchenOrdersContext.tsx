@@ -101,6 +101,15 @@ function localDate(): string {
   return new Date(now.getTime() - offset).toISOString().slice(0, 10);
 }
 
+/** แปลง timestamp จาก API เป็นวันที่ตาม timezone ของเครื่องที่เปิดหน้าหลังบ้าน */
+function localDateFromTimestamp(value?: string | null): string | null {
+  if (!value) return null;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+  const offset = date.getTimezoneOffset() * 60_000;
+  return new Date(date.getTime() - offset).toISOString().slice(0, 10);
+}
+
 interface KitchenOrdersContextValue {
   orders: KitchenOrder[];
   counts: Record<KitchenOrderStatus, number>;
@@ -123,10 +132,12 @@ export function KitchenOrdersProvider({ children }: { children: ReactNode }) {
 
   const loadOrders = useCallback(async () => {
     try {
-      const [active, servedToday] = await Promise.all([
+      const [active, served] = await Promise.all([
         fetchOrders({ paymentStatus: ["succeeded"], fulfillmentStatus: ACTIVE_STATUSES }),
-        fetchOrders({ paymentStatus: ["succeeded"], fulfillmentStatus: ["served"], date: localDate() }),
+        // ห้ามกรองด้วย order_date เพราะลูกค้าอาจสั่งก่อนเที่ยงคืนแต่พนักงานเสิร์ฟวันถัดไป
+        fetchOrders({ paymentStatus: ["succeeded"], fulfillmentStatus: ["served"] }),
       ]);
+      const servedToday = served.filter((order) => localDateFromTimestamp(order.stepStartedAt) === localDate());
       setOrders([...active, ...servedToday].map(orderToKitchenOrder));
       setError(null);
     } catch (err) {
