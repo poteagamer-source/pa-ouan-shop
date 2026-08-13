@@ -4,6 +4,10 @@ import { query } from "../db.js";
 import { shopCurrency } from "../payments/money.js";
 
 const router = Router();
+// รายงานยอดขายยึดเวลาที่รับเงินจริง และแปลงเป็นวัน/เวลาไทยก่อนกรอง
+const SALE_TIMESTAMP = "COALESCE(o.paid_at, o.created_at)";
+const SALE_DATE = `(${SALE_TIMESTAMP} AT TIME ZONE 'Asia/Bangkok')::date`;
+const SALE_TIME = `(${SALE_TIMESTAMP} AT TIME ZONE 'Asia/Bangkok')::time`;
 
 // GET /api/sales?from=2026-05-01&to=2026-05-31&table=A01
 // ประวัติออเดอร์ที่จ่ายเงินแล้ว (paid = true) พร้อมรายการสินค้า
@@ -17,11 +21,11 @@ router.get("/", async (req, res, next) => {
 
     if (from) {
       params.push(from);
-      conditions.push(`o.order_date >= $${params.length}`);
+      conditions.push(`${SALE_DATE} >= $${params.length}::date`);
     }
     if (to) {
       params.push(to);
-      conditions.push(`o.order_date <= $${params.length}`);
+      conditions.push(`${SALE_DATE} <= $${params.length}::date`);
     }
     if (table) {
       params.push(table);
@@ -30,7 +34,8 @@ router.get("/", async (req, res, next) => {
 
     const { rows } = await query(
       `SELECT
-          o.id, o.table_name, o.total, o.amount_minor, o.currency, o.order_date, o.order_time,
+          o.id, o.table_name, o.total, o.amount_minor, o.currency,
+          ${SALE_DATE} AS sale_date, ${SALE_TIME} AS sale_time,
           o.payment_verified, o.slip_image,
           COALESCE(
             json_agg(
@@ -41,7 +46,7 @@ router.get("/", async (req, res, next) => {
        LEFT JOIN order_items oi ON oi.order_id = o.id
        WHERE ${conditions.join(" AND ")}
        GROUP BY o.id
-       ORDER BY o.order_date DESC, o.order_time DESC`,
+       ORDER BY ${SALE_TIMESTAMP} DESC`,
       params
     );
 
@@ -52,8 +57,8 @@ router.get("/", async (req, res, next) => {
         total: Number(r.total),
         amountMinor: Number(r.amount_minor),
         currency: r.currency,
-        date: r.order_date,
-        time: r.order_time,
+        date: r.sale_date,
+        time: r.sale_time,
         paymentVerified: r.payment_verified,
         slipImage: r.slip_image,
         items: r.items,
@@ -76,11 +81,11 @@ router.get("/summary", async (req, res, next) => {
 
     if (from) {
       params.push(from);
-      conditions.push(`o.order_date >= $${params.length}`);
+      conditions.push(`${SALE_DATE} >= $${params.length}::date`);
     }
     if (to) {
       params.push(to);
-      conditions.push(`o.order_date <= $${params.length}`);
+      conditions.push(`${SALE_DATE} <= $${params.length}::date`);
     }
     const where = conditions.join(" AND ");
 
@@ -91,9 +96,9 @@ router.get("/summary", async (req, res, next) => {
     );
 
     const byDay = await query(
-      `SELECT o.order_date AS date, COALESCE(SUM(o.total),0) AS revenue, COUNT(*) AS order_count
+      `SELECT ${SALE_DATE} AS date, COALESCE(SUM(o.total),0) AS revenue, COUNT(*) AS order_count
        FROM orders o WHERE ${where}
-       GROUP BY o.order_date ORDER BY o.order_date`,
+       GROUP BY ${SALE_DATE} ORDER BY ${SALE_DATE}`,
       params
     );
 
