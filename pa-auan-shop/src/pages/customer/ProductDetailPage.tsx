@@ -6,12 +6,14 @@ import { fetchProduct, fetchToppings } from "../../lib/api";
 import { useCart } from "../../context/CartContext";
 import { useCustomerPath } from "../../hooks/useCustomerPath";
 import type { Product, Topping } from "../../types";
+import { useLanguage } from "../../context/LanguageContext";
 
 export function ProductDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const paths = useCustomerPath();
   const { addItem } = useCart();
+  const { t } = useLanguage();
 
   const [product, setProduct] = useState<Product | null>(null);
   const [toppings5, setToppings5] = useState<Topping[]>([]);
@@ -72,7 +74,7 @@ export function ProductDetailPage() {
   if (loading) {
     return (
       <CustomerPageLayout showPager={false}>
-        <p className="text-center text-sm text-gray-400 py-16">กำลังโหลดข้อมูลสินค้า...</p>
+        <p className="text-center text-sm text-gray-400 py-16">{t("กำลังโหลดข้อมูลสินค้า...", "Loading item...")}</p>
       </CustomerPageLayout>
     );
   }
@@ -80,7 +82,7 @@ export function ProductDetailPage() {
   if (!product) {
     return (
       <CustomerPageLayout showPager={false}>
-        <p className="text-center text-sm text-gray-400 py-16">ไม่พบสินค้านี้</p>
+        <p className="text-center text-sm text-gray-400 py-16">{t("ไม่พบสินค้านี้", "Item not found")}</p>
       </CustomerPageLayout>
     );
   }
@@ -96,11 +98,11 @@ export function ProductDetailPage() {
           />
           <div className="flex-1 text-sm space-y-1">
             <p>
-              {product.name} {qty} ฿ {product.price} บาท
+              {t(product.name)} {qty} × ฿{product.price}
             </p>
-            {selectedToppings.map((t) => (
-              <p key={t.id} className="text-gray-600">
-                {t.name} 1 ฿ {t.price} บาท
+            {selectedToppings.map((topping) => (
+              <p key={topping.id} className="text-gray-600">
+                {t(topping.name)} 1 × ฿{topping.price}
               </p>
             ))}
             <div className="flex gap-4 mt-2">
@@ -112,7 +114,7 @@ export function ProductDetailPage() {
                   onChange={() => setTemp("cold")}
                   className="accent-brand"
                 />
-                <span>เย็น</span>
+                <span>{t("เย็น")}</span>
               </label>
               <label className="flex items-center gap-1.5 cursor-pointer">
                 <input
@@ -122,7 +124,7 @@ export function ProductDetailPage() {
                   onChange={() => setTemp("hot")}
                   className="accent-brand"
                 />
-                <span>ร้อน</span>
+                <span>{t("ร้อน")}</span>
               </label>
             </div>
             <div className="flex items-center gap-2 mt-2">
@@ -147,8 +149,8 @@ export function ProductDetailPage() {
           </div>
         </div>
 
-        <ToppingSection title="Toppings 5 บาท" items={toppings5} selected={selectedToppings} onToggle={toggleTopping} />
-        <ToppingSection title="Toppings 10 บาท" items={toppings10} selected={selectedToppings} onToggle={toggleTopping} />
+        <ToppingSection title={t("ท็อปปิ้ง 5 บาท", "Toppings — THB 5")} items={toppings5} selected={selectedToppings} onToggle={toggleTopping} />
+        <ToppingSection title={t("ท็อปปิ้ง 10 บาท", "Toppings — THB 10")} items={toppings10} selected={selectedToppings} onToggle={toggleTopping} />
       </div>
 
       <div className="sticky bottom-24 z-20 bg-white border-t border-gray-100 px-4 py-4 flex items-end justify-between gap-4 shadow-[0_-4px_12px_rgba(0,0,0,0.06)]">
@@ -162,14 +164,14 @@ export function ProductDetailPage() {
             onClick={handleAdd}
             className="rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white"
           >
-            เพิ่มลงในตะกร้า
+            {t("เพิ่มลงในตะกร้า")}
           </button>
           <button
             type="button"
             onClick={handleAdd}
             className="rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white text-center"
           >
-            ยืนยัน
+            {t("ยืนยัน")}
           </button>
         </div>
       </div>
@@ -188,26 +190,27 @@ function ToppingSection({
   selected: { id: string; name: string; price: number }[];
   onToggle: (t: { id: string; name: string; price: number }) => void;
 }) {
+  const { t } = useLanguage();
   return (
     <div>
       <h3 className="text-sm font-semibold mb-2">{title}</h3>
       <div className="flex gap-3 overflow-x-auto pb-2">
-        {items.map((t) => {
-          const isOn = selected.some((s) => s.id === t.id);
+        {items.map((topping) => {
+          const isOn = selected.some((s) => s.id === topping.id);
           return (
             <button
-              key={t.id}
+              key={topping.id}
               type="button"
-              onClick={() => onToggle(t)}
+              onClick={() => onToggle(topping)}
               className={`shrink-0 w-20 text-center ${isOn ? "opacity-100" : "opacity-80"}`}
             >
               <div className="relative">
-                <img src={t.image} alt={t.name} className="w-16 h-16 rounded-lg object-cover mx-auto" />
+                <img src={topping.image} alt={t(topping.name)} className="w-16 h-16 rounded-lg object-cover mx-auto" />
                 <span className="absolute bottom-0 right-0 flex h-5 w-5 items-center justify-center rounded-full bg-brand text-white text-xs">
                   +
                 </span>
               </div>
-              <p className="text-[10px] mt-1 text-gray-700">{t.name}</p>
+              <p className="text-[10px] mt-1 text-gray-700">{t(topping.name)}</p>
             </button>
           );
         })}

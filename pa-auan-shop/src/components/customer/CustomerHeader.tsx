@@ -21,7 +21,7 @@ export function CustomerHeader() {
   const isMenuPage = location.pathname.endsWith("/menu");
   const searchPlaceholder =
     isMenuPage && menuBrowse?.viewMode === "category"
-      ? categories.find((c) => c.id === menuBrowse.category)?.label ?? t("ค้นหาเมนู")
+      ? t(categories.find((c) => c.id === menuBrowse.category)?.label ?? "ค้นหาเมนู")
       : t("ค้นหาเมนู");
 
   return (
@@ -35,7 +35,7 @@ export function CustomerHeader() {
           <Menu className="w-6 h-6" />
         </button>
         <h1 className="flex-1 text-sm font-medium text-gray-800 leading-tight">
-          {SHOP_NAME}
+          {t(SHOP_NAME, "Pa Ouan Bua Loi — Hat Yai Branch")}
         </h1>
         <LanguageToggle compact />
         <span className="shrink-0 rounded-full bg-brand text-white text-xs font-semibold px-2.5 py-0.5">

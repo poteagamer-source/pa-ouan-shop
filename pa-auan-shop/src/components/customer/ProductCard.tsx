@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import type { Product } from "../../types";
 import { useCustomerPath } from "../../hooks/useCustomerPath";
+import { useLanguage } from "../../context/LanguageContext";
 
 interface Props {
   product: Product;
@@ -9,6 +10,7 @@ interface Props {
 
 export function ProductCard({ product, selected }: Props) {
   const paths = useCustomerPath();
+  const { t } = useLanguage();
 
   return (
     <Link
@@ -19,18 +21,18 @@ export function ProductCard({ product, selected }: Props) {
     >
       <img
         src={product.image}
-        alt={product.name}
+        alt={t(product.name)}
         className="w-full aspect-square object-cover rounded-lg"
       />
       <p className="mt-1.5 text-xs text-center text-gray-800 line-clamp-2 min-h-[2rem]">
-        {product.name}
+        {t(product.name)}
       </p>
       <div className="flex items-center justify-between mt-1 px-0.5">
         <span className="text-xs font-semibold text-gray-700">
           ฿ {product.price}
         </span>
         <span className="rounded-full bg-brand px-2.5 py-0.5 text-[10px] font-medium text-white">
-          เลือก
+          {t("เลือก", "Select")}
         </span>
       </div>
     </Link>

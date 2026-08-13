@@ -1,5 +1,6 @@
 import type { CategoryId } from "../../types";
 import { useCategories } from "../../context/CategoriesContext";
+import { useLanguage } from "../../context/LanguageContext";
 
 interface Props {
   active: CategoryId;
@@ -8,9 +9,10 @@ interface Props {
 
 export function CategoryChips({ active, onChange }: Props) {
   const { categories } = useCategories();
+  const { t } = useLanguage();
   return (
     <section className="px-4 py-3">
-      <h2 className="text-sm font-semibold text-gray-800 mb-2">หมวดหมู่</h2>
+      <h2 className="text-sm font-semibold text-gray-800 mb-2">{t("หมวดหมู่")}</h2>
       <div className="flex flex-wrap gap-2">
         {categories.map((cat) => (
           <button
@@ -23,7 +25,7 @@ export function CategoryChips({ active, onChange }: Props) {
                 : "bg-white text-gray-700 border border-gray-200 hover:border-gray-300"
             }`}
           >
-            {cat.label}
+            {t(cat.label)}
           </button>
         ))}
       </div>

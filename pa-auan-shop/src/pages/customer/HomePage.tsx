@@ -6,12 +6,14 @@ import { fetchProducts, subscribeToUpdates } from "../../lib/api";
 import { useCategories } from "../../context/CategoriesContext";
 import { useMenuBrowse } from "../../context/MenuBrowseContext";
 import type { Product } from "../../types";
+import { useLanguage } from "../../context/LanguageContext";
 
 export function HomePage() {
   const { viewMode, category, setCategory } = useMenuBrowse();
   const { categories } = useCategories();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const { t } = useLanguage();
 
   useEffect(() => {
     let active = true;
@@ -52,11 +54,11 @@ export function HomePage() {
   }, [products, viewMode, category]);
 
   const sectionTitle = useMemo(() => {
-    if (viewMode === "bestseller") return "เมนูขายดีประจำร้าน";
-    if (viewMode === "recommended") return "เมนูแนะนำ";
+    if (viewMode === "bestseller") return t("เมนูขายดีประจำร้าน", "Store bestsellers");
+    if (viewMode === "recommended") return t("เมนูแนะนำ", "Recommended menu");
     const catLabel = categories.find((c) => c.id === category)?.label ?? "";
-    return `เมนู${catLabel}`;
-  }, [viewMode, category, categories]);
+    return `${t("เมนู", "Menu: ")}${t(catLabel)}`;
+  }, [viewMode, category, categories, t]);
 
   return (
     <CustomerPageLayout>
@@ -66,14 +68,14 @@ export function HomePage() {
       {viewMode !== "category" && (
         <div className="px-4 pt-3">
           <span className="inline-block rounded-full bg-accent-blue px-3 py-1 text-xs font-medium text-gray-800">
-            {viewMode === "bestseller" ? "เมนูขายดี" : "เมนูแนะนำ"}
+            {viewMode === "bestseller" ? t("เมนูขายดี", "Bestsellers") : t("เมนูแนะนำ", "Recommended")}
           </span>
         </div>
       )}
       <section className="px-4 py-3">
         <h2 className="text-sm font-semibold text-gray-800 mb-3">{sectionTitle}</h2>
         {loading ? (
-          <p className="text-center text-sm text-gray-400 py-8">กำลังโหลดเมนู...</p>
+          <p className="text-center text-sm text-gray-400 py-8">{t("กำลังโหลดเมนู...", "Loading menu...")}</p>
         ) : (
           <>
             <div className="grid grid-cols-3 gap-2">
@@ -82,7 +84,7 @@ export function HomePage() {
               ))}
             </div>
             {filtered.length === 0 && (
-              <p className="text-center text-sm text-gray-500 py-8">ไม่มีรายการในหมวดนี้</p>
+              <p className="text-center text-sm text-gray-500 py-8">{t("ไม่มีรายการในหมวดนี้", "No items in this category")}</p>
             )}
           </>
         )}
