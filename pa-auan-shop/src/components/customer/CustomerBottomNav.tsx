@@ -70,10 +70,12 @@ export function CustomerBottomNav() {
           <div className="min-w-[52px]" aria-hidden />
         </div>
 
+        {/* ปุ่มกลางใช้เริ่มเลือกเมนูเพิ่ม ส่วนตะกร้าเปิดได้จากไอคอนด้านบน */}
         <Link
-          to={paths.cart}
+          to={paths.menu}
+          onClick={resetToMenu}
           className="absolute left-1/2 -translate-x-1/2 -top-5 flex h-14 w-14 items-center justify-center rounded-full bg-[#aee6f6] text-gray-900 shadow-lg border-4 border-[#fafafa] hover:scale-105 transition-transform"
-          aria-label="ตะกร้า"
+          aria-label="สั่งอาหารเพิ่ม"
         >
           <Plus className="w-7 h-7" strokeWidth={2.5} />
           {cartCount > 0 && (

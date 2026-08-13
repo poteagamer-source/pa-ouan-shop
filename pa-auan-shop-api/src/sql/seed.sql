@@ -13,47 +13,47 @@ ON CONFLICT (id) DO NOTHING;
 
 -- products
 INSERT INTO products (id, name, price, category_id, image, bestseller, recommended) VALUES
-  ('bl1', 'บัวลอยไข่หวาน', 35, 'bualoy', '/images/food-bualoy.png', true, true),
-  ('bl2', 'บัวลอยภูเขาไฟ', 35, 'bualoy', '/images/food-bualoy.png', true, true),
-  ('bl3', 'บัวลอยนมสด', 35, 'bualoy', '/images/food-bualoy.png', true, true),
-  ('bl4', 'บัวลอยชาไทย', 35, 'bualoy', '/images/food-bualoy.png', false, true),
-  ('bl5', 'บัวลอยมะพร้าวอ่อน', 30, 'bualoy', '/images/food-bualoy.png', false, false),
-  ('bl6', 'บัวลอยไข่เค็มหวาน', 35, 'bualoy', '/images/food-bualoy.png', false, false),
-  ('bl7', 'บัวลอยไข่เป็ดหวาน', 40, 'bualoy', '/images/food-bualoy.png', false, true),
-  ('bl8', 'บัวลอยงาดำ', 40, 'bualoy', '/images/food-bualoy.png', false, false),
-  ('bl9', 'บัวลอยกะทิ', 25, 'bualoy', '/images/food-bualoy.png', false, false),
-  ('ck1', 'เฉาก๊วยน้ำเชื่อม', 25, 'chaokuay', '/images/food-chaokuay.png', false, false),
-  ('ck2', 'เฉาก๊วยน้ำลำไย', 35, 'chaokuay', '/images/food-chaokuay.png', true, true),
-  ('ck3', 'เฉาก๊วยนมสด', 30, 'chaokuay', '/images/food-chaokuay.png', false, true),
-  ('ck4', 'เฉาก๊วยชาไทย', 35, 'chaokuay', '/images/food-chaokuay.png', false, false),
-  ('ck5', 'เฉาก๊วยลำไย', 30, 'chaokuay', '/images/food-chaokuay.png', false, false),
-  ('ck6', 'เฉาก๊วยภูเขาไฟ', 40, 'chaokuay', '/images/food-chaokuay.png', true, false),
-  ('tt1', 'ทับทิมกรอบลำไย', 35, 'tubtim', '/images/food-tubtim.png', false, true),
-  ('tt2', 'ทับทิมกรอบแป๊ะอ้วน', 40, 'tubtim', '/images/food-tubtim.png', true, false),
-  ('tt3', 'ทับทิมกรอบบัวลอย', 55, 'tubtim', '/images/food-tubtim.png', false, false),
-  ('sm1', 'น้ำเต้าหู้ร้อน', 35, 'soymilk', '/images/food-soymilk.png', false, false),
-  ('sm2', 'น้ำเต้าหู้เย็น', 35, 'soymilk', '/images/food-soymilk.png', false, true),
-  ('ds1', 'น้ำแป๊ะอ้วน 4 อย่าง', 35, 'dessert', '/images/food-dessert.png', true, true),
-  ('ds2', 'ลอดช่องกะทิ', 25, 'dessert', '/images/food-dessert.png', false, true),
-  ('ds3', 'ข้าวเหนียวมะม่วง', 40, 'dessert', '/images/food-dessert.png', false, false),
-  ('ds4', 'บัวลอยแป๊ะอ้วน', 35, 'dessert', '/images/food-dessert.png', true, false)
-ON CONFLICT (id) DO NOTHING;
+  ('bl1', 'บัวลอยไข่หวาน', 35, 'bualoy', '/images/menu-bl1.png', true, true),
+  ('bl2', 'บัวลอยภูเขาไฟ', 35, 'bualoy', '/images/menu-bl2.png', true, true),
+  ('bl3', 'บัวลอยนมสด', 35, 'bualoy', '/images/menu-bl3.png', true, true),
+  ('bl4', 'บัวลอยชาไทย', 35, 'bualoy', '/images/menu-bl4.png', false, true),
+  ('bl5', 'บัวลอยมะพร้าวอ่อน', 30, 'bualoy', '/images/menu-bl5.png', false, false),
+  ('bl6', 'บัวลอยไข่เค็มหวาน', 35, 'bualoy', '/images/menu-bl6.png', false, false),
+  ('bl7', 'บัวลอยไข่เป็ดหวาน', 40, 'bualoy', '/images/menu-bl7.png', false, true),
+  ('bl8', 'บัวลอยงาดำ', 40, 'bualoy', '/images/menu-bl8.png', false, false),
+  ('bl9', 'บัวลอยกะทิ', 25, 'bualoy', '/images/menu-bl9.png', false, false),
+  ('ck1', 'เฉาก๊วยน้ำเชื่อม', 25, 'chaokuay', '/images/menu-ck1.png', false, false),
+  ('ck2', 'เฉาก๊วยน้ำลำไย', 35, 'chaokuay', '/images/menu-ck2.png', true, true),
+  ('ck3', 'เฉาก๊วยนมสด', 30, 'chaokuay', '/images/menu-ck3.png', false, true),
+  ('ck4', 'เฉาก๊วยชาไทย', 35, 'chaokuay', '/images/menu-ck4.png', false, false),
+  ('ck5', 'เฉาก๊วยลำไย', 30, 'chaokuay', '/images/menu-ck5.png', false, false),
+  ('ck6', 'เฉาก๊วยภูเขาไฟ', 40, 'chaokuay', '/images/menu-ck6.png', true, false),
+  ('tt1', 'ทับทิมกรอบลำไย', 35, 'tubtim', '/images/menu-tt1.png', false, true),
+  ('tt2', 'ทับทิมกรอบแป๊ะอ้วน', 40, 'tubtim', '/images/menu-tt2.png', true, false),
+  ('tt3', 'ทับทิมกรอบบัวลอย', 55, 'tubtim', '/images/menu-tt3.png', false, false),
+  ('sm1', 'น้ำเต้าหู้ร้อน', 35, 'soymilk', '/images/menu-sm1.png', false, false),
+  ('sm2', 'น้ำเต้าหู้เย็น', 35, 'soymilk', '/images/menu-sm2.png', false, true),
+  ('ds1', 'น้ำแป๊ะอ้วน 4 อย่าง', 35, 'dessert', '/images/menu-ds1.png', true, true),
+  ('ds2', 'ลอดช่องกะทิ', 25, 'dessert', '/images/menu-ds2.png', false, true),
+  ('ds3', 'ข้าวเหนียวมะม่วง', 40, 'dessert', '/images/menu-ds3.png', false, false),
+  ('ds4', 'บัวลอยแป๊ะอ้วน', 35, 'dessert', '/images/menu-ds4.png', true, false)
+ON CONFLICT (id) DO UPDATE SET image = EXCLUDED.image;
 
 -- toppings (tier 5 บาท)
 INSERT INTO toppings (id, name, price, image, tier) VALUES
-  ('t1', 'ถั่วแดง', 5, '/images/topping-redbean.png', 5),
-  ('t2', 'ลูกเดือย', 5, '/images/food-bualoy.png', 5),
-  ('t3', 'ข้าวโพด', 5, '/images/food-dessert.png', 5),
-  ('t4', 'เฉาก๊วย', 5, '/images/food-chaokuay.png', 5)
-ON CONFLICT (id) DO NOTHING;
+  ('t1', 'ถั่วแดง', 5, '/images/topping-redbean-v2.png', 5),
+  ('t2', 'ลูกเดือย', 5, '/images/topping-jobstears.png', 5),
+  ('t3', 'ข้าวโพด', 5, '/images/topping-corn.png', 5),
+  ('t4', 'เฉาก๊วย', 5, '/images/topping-grass-jelly.png', 5)
+ON CONFLICT (id) DO UPDATE SET image = EXCLUDED.image;
 
 -- toppings (tier 10 บาท)
 INSERT INTO toppings (id, name, price, image, tier) VALUES
-  ('t5', 'ฝอยทอง', 10, '/images/topping-foithong.png', 10),
-  ('t6', 'มะพร้าว', 10, '/images/topping-coconut.png', 10),
-  ('t7', 'ขนุน', 10, '/images/food-dessert.png', 10),
-  ('t8', 'เฉาก๊วยพิเศษ', 10, '/images/food-chaokuay.png', 10)
-ON CONFLICT (id) DO NOTHING;
+  ('t5', 'ฝอยทอง', 10, '/images/topping-foithong-v2.png', 10),
+  ('t6', 'มะพร้าว', 10, '/images/topping-coconut-v2.png', 10),
+  ('t7', 'ขนุน', 10, '/images/topping-jackfruit.png', 10),
+  ('t8', 'เฉาก๊วยพิเศษ', 10, '/images/topping-grass-jelly-special.png', 10)
+ON CONFLICT (id) DO UPDATE SET image = EXCLUDED.image;
 
 -- stock (สูตรเดิมจาก mockData.ts: qty = ((i * 7) % 28) + 3)
 INSERT INTO stock (product_id, stock_qty, unit) VALUES
