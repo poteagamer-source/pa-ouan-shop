@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from "
 import { fetchCategories } from "../lib/api";
 import type { CategoryId } from "../types";
 
+/** รูปแบบหมวดที่ dropdown/chips ต้องใช้ โดย id จำกัดตาม CategoryId */
 export interface CategoryOption {
   id: CategoryId;
   label: string;
@@ -13,18 +14,21 @@ interface CategoriesContextValue {
   error: string | null;
 }
 
+// มี default value เพราะบางหน้าสามารถแสดง loading ก่อน API ตอบได้โดยไม่ต้อง throw
 const CategoriesContext = createContext<CategoriesContextValue>({
   categories: [],
   loading: true,
   error: null,
 });
 
+/** โหลดหมวดจาก backend หนึ่งครั้ง แล้วแชร์ให้ customer menu และหน้า manager */
 export function CategoriesProvider({ children }: { children: ReactNode }) {
   const [categories, setCategories] = useState<CategoryOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    // active ป้องกัน Promise ที่ตอบช้าพยายาม setState หลัง component ถูก unmount
     let active = true;
     fetchCategories()
       .then((data) => {
@@ -49,6 +53,7 @@ export function CategoriesProvider({ children }: { children: ReactNode }) {
   );
 }
 
+/** คืน categories พร้อม loading/error เพื่อให้แต่ละหน้าเลือกวิธีแสดงผลเอง */
 export function useCategories() {
   return useContext(CategoriesContext);
 }
