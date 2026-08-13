@@ -2,10 +2,10 @@ import { useEffect, useMemo, useState, type FormEvent, type KeyboardEvent } from
 import { Search, Plus, CheckCircle2, XCircle, Grid2x2, Package, Pencil, Trash2, X } from "lucide-react";
 import { PageHeader } from "../../components/staff/PageHeader";
 import { StatCard } from "../../components/staff/StatCard";
-import { CategorySidebar } from "../../components/staff/CategorySidebar";
+import { CategorySidebar, type MenuCategoryId } from "../../components/staff/CategorySidebar";
 import { categoryMeta } from "../../config/constants";
-import { createProduct, deleteProduct, fetchProducts, subscribeToUpdates, updateProduct } from "../../lib/api";
-import type { CategoryId, Product } from "../../types";
+import { createProduct, deleteProduct, fetchProducts, fetchToppingStock, subscribeToUpdates, updateProduct, updateTopping, updateToppingStock } from "../../lib/api";
+import type { CategoryId, Product, ToppingStockItem } from "../../types";
 
 const PAGE_SIZE = 4;
 const categories = (Object.keys(categoryMeta) as CategoryId[]).map((id) => ({
@@ -33,7 +33,8 @@ const emptyForm = (category: CategoryId): ProductForm => ({
 
 export function MenuManagement() {
   const [products, setProducts] = useState<Product[]>([]);
-  const [selectedCategory, setSelectedCategory] = useState<CategoryId>("bualoy");
+  const [toppings, setToppings] = useState<ToppingStockItem[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<MenuCategoryId>("bualoy");
   const [page, setPage] = useState(1);
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(true);
@@ -46,7 +47,9 @@ export function MenuManagement() {
   const loadProducts = async () => {
     setLoading(true);
     try {
-      setProducts(await fetchProducts());
+      const [productData, toppingData] = await Promise.all([fetchProducts(), fetchToppingStock()]);
+      setProducts(productData);
+      setToppings(toppingData);
       setMessage("");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "โหลดรายการสินค้าไม่สำเร็จ");
@@ -58,7 +61,7 @@ export function MenuManagement() {
   useEffect(() => {
     void loadProducts();
     const unsubscribe = subscribeToUpdates((update) => {
-      if (update.resource === "products") void loadProducts();
+      if (["products", "toppings", "stock"].includes(update.resource)) void loadProducts();
     });
     const fallback = window.setInterval(() => void loadProducts(), 15000);
     const refreshOnFocus = () => void loadProducts();
@@ -71,14 +74,16 @@ export function MenuManagement() {
   }, []);
 
   const categoryCounts = useMemo(() => {
-    const counts = {} as Record<CategoryId, number>;
+    const counts = {} as Record<MenuCategoryId, number>;
     categories.forEach((category) => {
       counts[category.id] = products.filter((product) => product.category === category.id).length;
     });
+    counts.toppings = toppings.length;
     return counts;
-  }, [products]);
+  }, [products, toppings]);
 
   const filtered = useMemo(() => {
+    if (selectedCategory === "toppings") return [];
     const source = products.filter((product) => product.category === selectedCategory);
     const term = query.trim().toLowerCase();
     return term ? source.filter((product) => product.name.toLowerCase().includes(term)) : source;
@@ -88,11 +93,34 @@ export function MenuManagement() {
   const safePage = Math.min(page, totalPages);
   const pageItems = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
   const activeCount = products.filter((product) => product.active !== false).length;
+  const filteredToppings = useMemo(() => {
+    const term = query.trim().toLowerCase();
+    return term ? toppings.filter((item) => item.name.toLowerCase().includes(term)) : toppings;
+  }, [query, toppings]);
 
   const openCreate = () => {
+    if (selectedCategory === "toppings") return;
     setEditing(null);
     setForm(emptyForm(selectedCategory));
     setModalOpen(true);
+  };
+
+  const saveToppingPrice = async (item: ToppingStockItem, rawPrice: string) => {
+    const price = Number(rawPrice);
+    if (!Number.isFinite(price) || price < 0 || price === item.price) return;
+    try {
+      const updated = await updateTopping(item.id, { price });
+      setToppings((current) => current.map((row) => row.id === item.id ? { ...row, ...updated } : row));
+      setMessage("อัปเดตราคาท็อปปิ้งเรียบร้อย");
+    } catch (error) { setMessage(error instanceof Error ? error.message : "อัปเดตราคาไม่สำเร็จ"); }
+  };
+
+  const toggleTopping = async (item: ToppingStockItem) => {
+    try {
+      const updated = await updateToppingStock(item.id, { active: !item.active });
+      setToppings((current) => current.map((row) => row.id === item.id ? updated : row));
+      setMessage(updated.active ? "เปิดขายท็อปปิ้งแล้ว" : "ปิดขายท็อปปิ้งแล้ว");
+    } catch (error) { setMessage(error instanceof Error ? error.message : "เปลี่ยนสถานะไม่สำเร็จ"); }
   };
 
   const openEdit = (product: Product) => {
@@ -189,10 +217,10 @@ export function MenuManagement() {
       <PageHeader title="จัดการสินค้า" subtitle="เพิ่ม ลบ หรือแก้ไขข้อมูลรายการสินค้าและราคา" />
 
       <div className="flex flex-wrap gap-4 mb-6">
-        <StatCard icon={<Package className="w-5 h-5" />} iconBgClass="bg-brand-light" iconColorClass="text-brand" label="สินค้าทั้งหมด" value={String(products.length)} sublabel="รายการ" highlighted />
+        <StatCard icon={<Package className="w-5 h-5" />} iconBgClass="bg-brand-light" iconColorClass="text-brand" label="สินค้าทั้งหมด" value={String(products.length + toppings.length)} sublabel="รวมท็อปปิ้ง" highlighted />
         <StatCard icon={<CheckCircle2 className="w-5 h-5" />} iconBgClass="bg-green-50" iconColorClass="text-green-500" label="เปิดขาย" value={String(activeCount)} valueColorClass="text-green-600" sublabel="รายการ" />
         <StatCard icon={<XCircle className="w-5 h-5" />} iconBgClass="bg-red-50" iconColorClass="text-red-500" label="ปิดขาย" value={String(products.length - activeCount)} valueColorClass="text-red-500" sublabel="รายการ" />
-        <StatCard icon={<Grid2x2 className="w-5 h-5" />} iconBgClass="bg-blue-50" iconColorClass="text-blue-500" label="หมวดหมู่สินค้า" value={String(categories.length)} valueColorClass="text-blue-500" sublabel="หมวดหมู่" />
+        <StatCard icon={<Grid2x2 className="w-5 h-5" />} iconBgClass="bg-blue-50" iconColorClass="text-blue-500" label="หมวดหมู่สินค้า" value={String(categories.length + 1)} valueColorClass="text-blue-500" sublabel="รวมท็อปปิ้ง" />
       </div>
 
       {message && (
@@ -203,6 +231,7 @@ export function MenuManagement() {
 
       <div className="flex flex-col lg:flex-row gap-6">
         <CategorySidebar
+          showToppings
           categoryCounts={categoryCounts}
           selected={selectedCategory}
           onSelect={(id) => {
@@ -214,16 +243,16 @@ export function MenuManagement() {
         <div className="flex-1 bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
           <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
             <p className="text-sm font-semibold text-gray-700">
-              รายการสินค้าในหมวด: {categoryMeta[selectedCategory].label} ({filtered.length} รายการ)
+              {selectedCategory === "toppings" ? `รายการท็อปปิ้ง (${filteredToppings.length} รายการ)` : `รายการสินค้าในหมวด: ${categoryMeta[selectedCategory].label} (${filtered.length} รายการ)`}
             </p>
             <div className="flex items-center gap-2">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                 <input type="search" value={query} onChange={(event) => { setQuery(event.target.value); setPage(1); }} placeholder="ค้นหาสินค้า" className="rounded-full border border-gray-200 pl-9 pr-4 py-2 text-sm outline-none focus:border-brand" />
               </div>
-              <button type="button" onClick={openCreate} className="flex items-center gap-1.5 rounded-full bg-brand text-white text-sm font-medium px-4 py-2 hover:bg-brand-dark">
+              {selectedCategory !== "toppings" && <button type="button" onClick={openCreate} className="flex items-center gap-1.5 rounded-full bg-brand text-white text-sm font-medium px-4 py-2 hover:bg-brand-dark">
                 <Plus className="w-4 h-4" /> เพิ่มสินค้า
-              </button>
+              </button>}
             </div>
           </div>
 
@@ -235,7 +264,17 @@ export function MenuManagement() {
                 </tr>
               </thead>
               <tbody>
-                {pageItems.map((product, index) => {
+                {selectedCategory === "toppings" && filteredToppings.map((item, index) => (
+                  <tr key={item.id} className="border-b border-gray-50 last:border-0">
+                    <td className="py-3 text-gray-500">{index + 1}</td>
+                    <td className="py-3"><img src={item.image} alt={item.name} className="h-10 w-10 rounded-lg object-cover" /></td>
+                    <td className="py-3 text-gray-700"><p>{item.name}</p><p className="text-xs text-gray-400">กลุ่ม {item.tier} บาท</p></td>
+                    <td className="py-3"><input key={`${item.id}-${item.price}`} type="number" min="0" step="0.01" defaultValue={item.price.toFixed(2)} onBlur={(event) => void saveToppingPrice(item, event.currentTarget.value)} onKeyDown={(event) => { if (event.key === "Enter") { event.currentTarget.blur(); void saveToppingPrice(item, event.currentTarget.value); } }} className="w-24 rounded-full border border-gray-200 px-3 py-1.5 text-sm outline-none focus:border-brand" /><span className="ml-1 text-gray-400">บาท</span></td>
+                    <td className="py-3"><button type="button" onClick={() => void toggleTopping(item)} aria-pressed={item.active} className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${item.active ? "bg-green-500" : "bg-gray-300"}`}><span className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${item.active ? "translate-x-6" : "translate-x-1"}`} /></button><span className="ml-2 text-xs text-gray-500">{item.active ? "เปิดขาย" : "ปิดขาย"}</span></td>
+                    <td className="py-3 text-xs text-gray-400">แก้ราคาได้ทันที</td>
+                  </tr>
+                ))}
+                {selectedCategory !== "toppings" && pageItems.map((product, index) => {
                   const active = product.active !== false;
                   return (
                     <tr key={product.id} className="border-b border-gray-50 last:border-0">
@@ -261,20 +300,20 @@ export function MenuManagement() {
                     </tr>
                   );
                 })}
-                {!loading && pageItems.length === 0 && <tr><td colSpan={6} className="py-8 text-center text-gray-400">ไม่พบสินค้า</td></tr>}
+                {!loading && (selectedCategory === "toppings" ? filteredToppings.length === 0 : pageItems.length === 0) && <tr><td colSpan={6} className="py-8 text-center text-gray-400">ไม่พบสินค้า</td></tr>}
                 {loading && <tr><td colSpan={6} className="py-8 text-center text-gray-400">กำลังโหลดสินค้า...</td></tr>}
               </tbody>
             </table>
           </div>
 
-          <div className="flex items-center justify-between mt-4">
+          {selectedCategory !== "toppings" && <div className="flex items-center justify-between mt-4">
             <p className="text-xs text-gray-400">แสดง {pageItems.length === 0 ? 0 : (safePage - 1) * PAGE_SIZE + 1} - {(safePage - 1) * PAGE_SIZE + pageItems.length} จาก {filtered.length} รายการ</p>
             <div className="flex items-center gap-1">
               <button type="button" disabled={safePage <= 1} onClick={() => setPage((value) => Math.max(1, value - 1))} className="w-7 h-7 rounded-full text-gray-400 disabled:opacity-30">{"<"}</button>
               {Array.from({ length: totalPages }, (_, index) => index + 1).map((number) => <button key={number} type="button" onClick={() => setPage(number)} className={`w-7 h-7 rounded-full text-sm ${number === safePage ? "bg-brand text-white" : "text-gray-500 hover:bg-gray-100"}`}>{number}</button>)}
               <button type="button" disabled={safePage >= totalPages} onClick={() => setPage((value) => Math.min(totalPages, value + 1))} className="w-7 h-7 rounded-full text-gray-400 disabled:opacity-30">{">"}</button>
             </div>
-          </div>
+          </div>}
         </div>
       </div>
 

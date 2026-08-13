@@ -250,6 +250,21 @@ CREATE INDEX IF NOT EXISTS idx_orders_fulfillment_status ON orders(fulfillment_s
 CREATE INDEX IF NOT EXISTS idx_order_items_order ON order_items(order_id);
 CREATE INDEX IF NOT EXISTS idx_order_item_toppings_item ON order_item_toppings(order_item_id);
 
+-- ลบออเดอร์สาธิตรุ่นเก่าที่ไม่ได้สร้างผ่านขั้นตอนสั่งซื้อของลูกค้า
+-- ระบุรหัสแบบเจาะจงเพื่อไม่กระทบออเดอร์จริง (รหัสจริงขึ้นต้นด้วย O)
+DELETE FROM payment_events WHERE order_id IN (
+  '1D2026005','9C2026011','5D2026005b','123456789','5A2026005','987026003',
+  'SD2026005','SD2026010','SD2026001','SD2026011'
+);
+DELETE FROM payments WHERE order_id IN (
+  '1D2026005','9C2026011','5D2026005b','123456789','5A2026005','987026003',
+  'SD2026005','SD2026010','SD2026001','SD2026011'
+);
+DELETE FROM orders WHERE id IN (
+  '1D2026005','9C2026011','5D2026005b','123456789','5A2026005','987026003',
+  'SD2026005','SD2026010','SD2026001','SD2026011'
+);
+
 -- รูปประจำเมนู: migration นี้รันทุกครั้งที่ deploy เพื่ออัปเดตฐานข้อมูลเดิม
 UPDATE products AS product
 SET image = images.path

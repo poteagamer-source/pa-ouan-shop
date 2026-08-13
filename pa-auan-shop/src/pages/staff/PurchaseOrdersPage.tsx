@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Banknote, CheckCircle, ChevronRight, FileText, Loader2, Package } from "lucide-react";
 import { PageHeader } from "../../components/staff/PageHeader";
 import { StatCard } from "../../components/staff/StatCard";
-import { fetchSales } from "../../lib/api";
+import { fetchSales, subscribeToUpdates } from "../../lib/api";
 import type { SalesOrder } from "../../types";
 
 /** หน้าตรวจสอบออเดอร์ที่ชำระเงินจริงจาก API (ไม่ใช้ mock data) */
@@ -13,10 +13,15 @@ export function PurchaseOrdersPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchSales()
+    const load = () => fetchSales()
       .then((data) => { setOrders(data); setSelectedId(data[0]?.id); })
       .catch((err) => setError(err instanceof Error ? err.message : "โหลดรายการสั่งซื้อไม่สำเร็จ"))
       .finally(() => setLoading(false));
+    void load();
+    const unsubscribe = subscribeToUpdates((update) => {
+      if (update.resource === "orders") void load();
+    });
+    return unsubscribe;
   }, []);
 
   const selected = useMemo(() => orders.find((order) => order.id === selectedId) ?? orders[0], [orders, selectedId]);

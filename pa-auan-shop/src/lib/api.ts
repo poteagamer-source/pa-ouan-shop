@@ -163,6 +163,10 @@ export function fetchToppings(tier?: 5 | 10): Promise<Topping[]> {
   return request(`/toppings${toQueryString({ tier })}`);
 }
 
+export function updateTopping(id: string, payload: Partial<{ name: string; price: number; image: string; tier: 5 | 10 }>): Promise<Topping> {
+  return request(`/toppings/${id}`, { method: "PUT", body: JSON.stringify(payload) });
+}
+
 /* ---------------------------------- stock --------------------------------- */
 
 export function fetchStock(): Promise<StockItem[]> {
