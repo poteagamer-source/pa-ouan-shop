@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { Minus, Plus } from "lucide-react";
 import { CustomerPageLayout } from "../../components/customer/CustomerPageLayout";
 import { fetchProduct, fetchToppings } from "../../lib/api";
@@ -164,12 +164,13 @@ export function ProductDetailPage() {
           >
             เพิ่มลงในตะกร้า
           </button>
-          <Link
-            to={paths.cart}
+          <button
+            type="button"
+            onClick={handleAdd}
             className="rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white text-center"
           >
             ยืนยัน
-          </Link>
+          </button>
         </div>
       </div>
     </CustomerPageLayout>

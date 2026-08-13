@@ -15,6 +15,8 @@ import {
 } from "lucide-react";
 import { SHOP_SHORT } from "../../config/constants";
 import { useStaffAuth } from "../../context/StaffAuthContext";
+import { useLanguage } from "../../context/LanguageContext";
+import { LanguageToggle } from "../LanguageToggle";
 
 const managerLinks = [
   { to: "/staff", label: "หน้าหลัก", icon: Home, end: true },
@@ -49,6 +51,7 @@ interface Props {
 
 export function StaffSidebar({ variant }: Props) {
   const { user, logout } = useStaffAuth();
+  const { t } = useLanguage();
   const links =
     variant === "manager" ? managerLinks : variant === "kitchen" ? kitchenSubLinks : waiterSubLinks;
 
@@ -65,9 +68,10 @@ export function StaffSidebar({ variant }: Props) {
         </span>
         <h1 className="hidden text-base font-bold leading-tight text-brand md:block">{SHOP_SHORT}</h1>
       </div>
+      <div className="mb-4"><LanguageToggle /></div>
 
       {variant === "manager" && (
-        <p className="mb-3 hidden px-1 text-sm font-bold text-gray-800 md:block">จัดการร้านค้า</p>
+        <p className="mb-3 hidden px-1 text-sm font-bold text-gray-800 md:block">{t("จัดการร้านค้า")}</p>
       )}
 
       {(variant === "kitchen" || variant === "waiter") && (
@@ -76,7 +80,7 @@ export function StaffSidebar({ variant }: Props) {
             <NavLink
               key={to}
               to={to}
-              title={label}
+              title={t(label)}
               className={({ isActive }) =>
                 `flex-1 flex flex-col items-center gap-1 rounded-xl px-2 py-2 text-[11px] font-medium transition-colors ${
                   isActive ? "bg-brand-light text-brand" : "text-gray-400 hover:bg-gray-50"
@@ -84,17 +88,17 @@ export function StaffSidebar({ variant }: Props) {
               }
             >
               <Icon className="w-4 h-4" />
-              <span>{label}</span>
+              <span>{t(label)}</span>
             </NavLink>
           ))}
         </div>
       )}
 
       {variant === "kitchen" && (
-        <p className="mb-3 hidden px-1 text-sm font-bold text-gray-800 md:block">ห้องครัว</p>
+        <p className="mb-3 hidden px-1 text-sm font-bold text-gray-800 md:block">{t("ห้องครัว")}</p>
       )}
       {variant === "waiter" && (
-        <p className="mb-3 hidden px-1 text-sm font-bold text-gray-800 md:block">หน้าจอพนักงานเสิร์ฟ</p>
+        <p className="mb-3 hidden px-1 text-sm font-bold text-gray-800 md:block">{t("หน้าจอพนักงานเสิร์ฟ")}</p>
       )}
 
       <nav className="space-y-1">
@@ -103,7 +107,7 @@ export function StaffSidebar({ variant }: Props) {
             key={to}
             to={to}
             end={end}
-            title={label}
+            title={t(label)}
             className={({ isActive }) =>
               `flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors ${
                 isActive
@@ -113,21 +117,21 @@ export function StaffSidebar({ variant }: Props) {
             }
           >
             <Icon className="w-5 h-5 shrink-0" />
-            <span>{label}</span>
+            <span>{t(label)}</span>
           </NavLink>
         ))}
       </nav>
       <div className="mt-8 border-t border-gray-100 pt-4">
         <p className="truncate px-2 text-xs font-medium text-gray-700">{user?.displayName}</p>
         <p className="mb-2 px-2 text-[11px] text-gray-400">{user?.role}</p>
-        <button type="button" title="ออกจากระบบ" onClick={() => void logout()} className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-red-500 hover:bg-red-50"><LogOut className="h-5 w-5 shrink-0" /><span>ออกจากระบบ</span></button>
+        <button type="button" title={t("ออกจากระบบ")} onClick={() => void logout()} className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-red-500 hover:bg-red-50"><LogOut className="h-5 w-5 shrink-0" /><span>{t("ออกจากระบบ")}</span></button>
       </div>
     </aside>
 
     <nav className="no-scrollbar fixed inset-x-0 bottom-0 z-50 flex items-stretch gap-1 overflow-x-auto border-t border-gray-200 bg-white/95 px-2 pt-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] shadow-[0_-4px_20px_rgba(0,0,0,0.08)] backdrop-blur lg:hidden">
-      {user?.role === "manager" && variant !== "manager" && switches.map(({ to, label, icon: Icon }) => <NavLink key={`switch-${to}`} to={to} className={({isActive})=>`flex min-w-[68px] flex-col items-center gap-1 rounded-xl px-2 py-1.5 text-[10px] ${isActive?"bg-brand-light text-brand":"text-gray-500"}`}><Icon className="h-5 w-5"/><span className="whitespace-nowrap">{label}</span></NavLink>)}
-      {links.map(({to,label,icon:Icon,end})=><NavLink key={`mobile-${to}`} to={to} end={end} className={({isActive})=>`flex min-w-[72px] flex-col items-center gap-1 rounded-xl px-2 py-1.5 text-[10px] ${isActive?"bg-brand-light font-medium text-brand":"text-gray-500"}`}><Icon className="h-5 w-5"/><span className="whitespace-nowrap">{label}</span></NavLink>)}
-      <button type="button" onClick={()=>void logout()} className="flex min-w-[68px] flex-col items-center gap-1 rounded-xl px-2 py-1.5 text-[10px] text-red-500"><LogOut className="h-5 w-5"/><span>ออกระบบ</span></button>
+      {user?.role === "manager" && variant !== "manager" && switches.map(({ to, label, icon: Icon }) => <NavLink key={`switch-${to}`} to={to} className={({isActive})=>`flex min-w-[68px] flex-col items-center gap-1 rounded-xl px-2 py-1.5 text-[10px] ${isActive?"bg-brand-light text-brand":"text-gray-500"}`}><Icon className="h-5 w-5"/><span className="whitespace-nowrap">{t(label)}</span></NavLink>)}
+      {links.map(({to,label,icon:Icon,end})=><NavLink key={`mobile-${to}`} to={to} end={end} className={({isActive})=>`flex min-w-[72px] flex-col items-center gap-1 rounded-xl px-2 py-1.5 text-[10px] ${isActive?"bg-brand-light font-medium text-brand":"text-gray-500"}`}><Icon className="h-5 w-5"/><span className="whitespace-nowrap">{t(label)}</span></NavLink>)}
+      <button type="button" onClick={()=>void logout()} className="flex min-w-[68px] flex-col items-center gap-1 rounded-xl px-2 py-1.5 text-[10px] text-red-500"><LogOut className="h-5 w-5"/><span>{t("ออกจากระบบ")}</span></button>
     </nav>
   </>;
 }

@@ -4,8 +4,10 @@ import { Home, Heart, Plus, Sparkles } from "lucide-react";
 import { useCart } from "../../context/CartContext";
 import { useMenuBrowse } from "../../context/MenuBrowseContext";
 import { useCustomerPath } from "../../hooks/useCustomerPath";
+import { useLanguage } from "../../context/LanguageContext";
 
 export function CustomerBottomNav() {
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const location = useLocation();
   const paths = useCustomerPath();
@@ -36,7 +38,7 @@ export function CustomerBottomNav() {
 
         <div className="absolute inset-x-0 bottom-2 flex items-end justify-between px-6">
           <NavIcon
-            label="หน้าหลัก"
+            label={t("หน้าหลักลูกค้า")}
             active={isHome}
             onClick={() => {
               resetToMenu();
@@ -47,7 +49,7 @@ export function CustomerBottomNav() {
           </NavIcon>
 
           <NavIcon
-            label="แนะนำ"
+            label={t("แนะนำ")}
             active={viewMode === "recommended"}
             onClick={() => goMenuWithMode("recommended")}
           >
@@ -57,7 +59,7 @@ export function CustomerBottomNav() {
           <div className="w-14" />
 
           <NavIcon
-            label="ขายดี"
+            label={t("ขายดี")}
             active={viewMode === "bestseller"}
             onClick={() => goMenuWithMode("bestseller")}
           >
@@ -75,7 +77,7 @@ export function CustomerBottomNav() {
           to={paths.menu}
           onClick={resetToMenu}
           className="absolute left-1/2 -translate-x-1/2 -top-5 flex h-14 w-14 items-center justify-center rounded-full bg-[#aee6f6] text-gray-900 shadow-lg border-4 border-[#fafafa] hover:scale-105 transition-transform"
-          aria-label="สั่งอาหารเพิ่ม"
+          aria-label={t("สั่งอาหารเพิ่ม")}
         >
           <Plus className="w-7 h-7" strokeWidth={2.5} />
           {cartCount > 0 && (

@@ -3,14 +3,18 @@ import { QrCode, Smartphone } from "lucide-react";
 import { SHOP_SHORT } from "../config/constants";
 import { images } from "../data/images";
 import { TABLE_IDS, staffPortalUrl, tableOrderUrl } from "../config/qrRoutes";
+import { LanguageToggle } from "../components/LanguageToggle";
+import { useLanguage } from "../context/LanguageContext";
 
 export function RoleSelect() {
+  const { t } = useLanguage();
   const [params] = useSearchParams();
   const error = params.get("error");
   const hint = params.get("hint");
 
   return (
-    <div className="min-h-dvh flex flex-col items-center justify-center bg-gradient-to-b from-brand-light to-white p-6">
+    <div className="relative min-h-dvh flex flex-col items-center justify-center bg-gradient-to-b from-brand-light to-white p-6">
+      <div className="absolute right-4 top-4"><LanguageToggle /></div>
       <div className="text-center mb-6">
         <img
           src={images.logoMascot}
@@ -18,7 +22,7 @@ export function RoleSelect() {
           className="w-28 h-28 mx-auto mb-4 rounded-full object-cover shadow-lg border-4 border-white"
         />
         <h1 className="text-2xl font-bold text-brand">{SHOP_SHORT}</h1>
-        <p className="text-gray-600 mt-1 text-sm">ระบบสั่งซื้อและจัดการร้าน</p>
+        <p className="text-gray-600 mt-1 text-sm">{t("ระบบสั่งซื้อและจัดการร้าน", "Ordering and store management")}</p>
       </div>
 
       {(error === "invalid-table" || hint === "scan-table-qr") && (
@@ -32,7 +36,7 @@ export function RoleSelect() {
       <div className="w-full max-w-sm rounded-2xl bg-white p-5 shadow-md border border-orange-100 mb-4">
         <div className="flex items-center gap-2 text-brand font-semibold text-sm mb-2">
           <QrCode className="w-4 h-4" />
-          ลูกค้า — สแกน QR ที่โต๊ะ
+          {t("ลูกค้า — สแกน QR ที่โต๊ะ", "Customer — scan the table QR")}
         </div>
         <p className="text-xs text-gray-500 mb-3">
           แต่ละโต๊ะมี QR แยกกัน ระบบจะรู้เลขโต๊ะอัตโนมัติ
@@ -57,7 +61,7 @@ export function RoleSelect() {
       <div className="w-full max-w-sm rounded-2xl bg-white p-5 shadow-md border border-gray-200">
         <div className="flex items-center gap-2 text-gray-800 font-semibold text-sm mb-2">
           <Smartphone className="w-4 h-4" />
-          พนักงาน — สแกน QR แยก
+          {t("พนักงาน — สแกน QR แยก", "Staff — use the staff QR")}
         </div>
         <p className="text-xs text-gray-500 mb-3">
           QR พนักงานไม่ผูกโต๊ะ ใช้คนละอันกับลูกค้า
@@ -66,7 +70,7 @@ export function RoleSelect() {
           to="/staff-entry"
           className="block w-full text-center rounded-lg bg-gray-800 text-white py-2.5 text-sm font-medium hover:bg-gray-700"
         >
-          เข้าระบบพนักงาน
+          {t("เข้าระบบพนักงาน", "Staff sign in")}
         </Link>
         <p className="text-[11px] text-gray-400 font-mono mt-2 break-all text-center">
           {staffPortalUrl()}

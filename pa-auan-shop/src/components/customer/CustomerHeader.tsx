@@ -6,8 +6,11 @@ import { useTable } from "../../context/TableContext";
 import { useCustomerPath } from "../../hooks/useCustomerPath";
 import { useMenuBrowseOptional } from "../../context/MenuBrowseContext";
 import { useCategories } from "../../context/CategoriesContext";
+import { LanguageToggle } from "../LanguageToggle";
+import { useLanguage } from "../../context/LanguageContext";
 
 export function CustomerHeader() {
+  const { t } = useLanguage();
   const { cartCount } = useCart();
   const { tableId } = useTable();
   const paths = useCustomerPath();
@@ -18,8 +21,8 @@ export function CustomerHeader() {
   const isMenuPage = location.pathname.endsWith("/menu");
   const searchPlaceholder =
     isMenuPage && menuBrowse?.viewMode === "category"
-      ? categories.find((c) => c.id === menuBrowse.category)?.label ?? "ค้นหาเมนู"
-      : "ค้นหาเมนู";
+      ? categories.find((c) => c.id === menuBrowse.category)?.label ?? t("ค้นหาเมนู")
+      : t("ค้นหาเมนู");
 
   return (
     <header className="sticky top-0 z-20 bg-white/95 backdrop-blur border-b border-gray-100 px-4 pt-3 pb-2">
@@ -34,8 +37,9 @@ export function CustomerHeader() {
         <h1 className="flex-1 text-sm font-medium text-gray-800 leading-tight">
           {SHOP_NAME}
         </h1>
+        <LanguageToggle compact />
         <span className="shrink-0 rounded-full bg-brand text-white text-xs font-semibold px-2.5 py-0.5">
-          โต๊ะ {tableId}
+          {t("โต๊ะ")} {tableId}
         </span>
       </div>
       <div className="flex gap-2 items-center">

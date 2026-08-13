@@ -4,8 +4,10 @@ import { OrderSummaryCard } from "../../components/OrderSummaryCard";
 import { useCart } from "../../context/CartContext";
 import { images } from "../../data/images";
 import { useCustomerPath } from "../../hooks/useCustomerPath";
+import { useLanguage } from "../../context/LanguageContext";
 
 export function CartPage() {
+  const { t } = useLanguage();
   const paths = useCustomerPath();
   const { items, total } = useCart();
 
@@ -19,17 +21,17 @@ export function CartPage() {
               alt=""
               className="w-32 h-32 object-contain opacity-40 mb-4"
             />
-            <p className="text-sm text-gray-500 mb-6">ยังไม่มีสินค้าในตะกร้า</p>
+            <p className="text-sm text-gray-500 mb-6">{t("ยังไม่มีสินค้าในตะกร้า")}</p>
             <Link
               to={paths.menu}
               className="rounded-lg bg-brand px-6 py-2.5 text-sm font-medium text-white"
             >
-              เลือกเมนู
+              {t("เลือกเมนู")}
             </Link>
           </div>
         ) : (
           <>
-            <p className="text-right text-xs text-brand mb-2 cursor-pointer">Edit items</p>
+            <p className="text-right text-xs text-brand mb-2 cursor-pointer">{t("แก้ไข")}</p>
             <OrderSummaryCard items={items} total={total} />
 
             <img
@@ -44,13 +46,13 @@ export function CartPage() {
                   to={paths.menu}
                   className="rounded-lg bg-brand px-5 py-2.5 text-sm font-medium text-white text-center"
                 >
-                  ย้อนกลับ
+                  {t("ย้อนกลับ")}
                 </Link>
                 <Link
                   to={paths.payment}
                   className="rounded-lg bg-brand px-5 py-2.5 text-sm font-medium text-white text-center"
                 >
-                  ชำระเงิน
+                  {t("ชำระเงิน")}
                 </Link>
               </div>
             </div>
