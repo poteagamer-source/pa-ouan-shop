@@ -95,21 +95,6 @@ const NEXT_STATUS: Record<KitchenOrderStatus, KitchenOrderStatus | null> = {
 const POLL_INTERVAL_MS = 5000;
 const ACTIVE_STATUSES: FulfillmentStatus[] = ["queued", "cooking", "ready"];
 
-function localDate(): string {
-  const now = new Date();
-  const offset = now.getTimezoneOffset() * 60_000;
-  return new Date(now.getTime() - offset).toISOString().slice(0, 10);
-}
-
-/** แปลง timestamp จาก API เป็นวันที่ตาม timezone ของเครื่องที่เปิดหน้าหลังบ้าน */
-function localDateFromTimestamp(value?: string | null): string | null {
-  if (!value) return null;
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return null;
-  const offset = date.getTimezoneOffset() * 60_000;
-  return new Date(date.getTime() - offset).toISOString().slice(0, 10);
-}
-
 interface KitchenOrdersContextValue {
   orders: KitchenOrder[];
   counts: Record<KitchenOrderStatus, number>;
@@ -132,13 +117,13 @@ export function KitchenOrdersProvider({ children }: { children: ReactNode }) {
 
   const loadOrders = useCallback(async () => {
     try {
-      const [active, served] = await Promise.all([
+      const [active, servedOrders] = await Promise.all([
         fetchOrders({ paymentStatus: ["succeeded"], fulfillmentStatus: ACTIVE_STATUSES }),
-        // ห้ามกรองด้วย order_date เพราะลูกค้าอาจสั่งก่อนเที่ยงคืนแต่พนักงานเสิร์ฟวันถัดไป
+        // ประวัติต้องอิงสถานะ served จากฐานข้อมูลโดยตรง ไม่กรองวันที่ใน browser
+        // เพราะ timezone และวันที่สั่งอาจต่างจากวันที่เสิร์ฟ ทำให้รายการที่เพิ่งเสิร์ฟหายได้
         fetchOrders({ paymentStatus: ["succeeded"], fulfillmentStatus: ["served"] }),
       ]);
-      const servedToday = served.filter((order) => localDateFromTimestamp(order.stepStartedAt) === localDate());
-      setOrders([...active, ...servedToday].map(orderToKitchenOrder));
+      setOrders([...active, ...servedOrders].map(orderToKitchenOrder));
       setError(null);
     } catch (err) {
       console.error("โหลดออเดอร์ห้องครัวไม่สำเร็จ:", err);
