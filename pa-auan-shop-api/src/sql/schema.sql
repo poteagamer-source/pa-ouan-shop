@@ -249,3 +249,44 @@ CREATE INDEX IF NOT EXISTS idx_orders_payment_status ON orders(payment_status);
 CREATE INDEX IF NOT EXISTS idx_orders_fulfillment_status ON orders(fulfillment_status);
 CREATE INDEX IF NOT EXISTS idx_order_items_order ON order_items(order_id);
 CREATE INDEX IF NOT EXISTS idx_order_item_toppings_item ON order_item_toppings(order_item_id);
+
+-- รูปประจำเมนู: migration นี้รันทุกครั้งที่ deploy เพื่ออัปเดตฐานข้อมูลเดิม
+UPDATE products AS product
+SET image = images.path
+FROM (VALUES
+  ('bl1', '/images/menu-bl1.png'), ('bl2', '/images/menu-bl2.png'),
+  ('bl3', '/images/menu-bl3.png'), ('bl4', '/images/menu-bl4.png'),
+  ('bl5', '/images/menu-bl5.png'), ('bl6', '/images/menu-bl6.png'),
+  ('bl7', '/images/menu-bl7.png'), ('bl8', '/images/menu-bl8.png'),
+  ('bl9', '/images/menu-bl9.png'), ('ck1', '/images/menu-ck1.png'),
+  ('ck2', '/images/menu-ck2.png'), ('ck3', '/images/menu-ck3.png'),
+  ('ck4', '/images/menu-ck4.png'), ('ck5', '/images/menu-ck5.png'),
+  ('ck6', '/images/menu-ck6.png'), ('tt1', '/images/menu-tt1.png'),
+  ('tt2', '/images/menu-tt2.png'), ('tt3', '/images/menu-tt3.png'),
+  ('sm1', '/images/menu-sm1.png'), ('sm2', '/images/menu-sm2.png'),
+  ('ds1', '/images/menu-ds1.png'), ('ds2', '/images/menu-ds2.png'),
+  ('ds3', '/images/menu-ds3.png'), ('ds4', '/images/menu-ds4.png')
+) AS images(id, path)
+WHERE product.id = images.id AND product.image IS DISTINCT FROM images.path;
+
+-- รูปประจำท็อปปิ้ง: แยกภาพตามวัตถุดิบแทนภาพหมวดที่ใช้ร่วมกัน
+UPDATE toppings AS topping
+SET image = images.path
+FROM (VALUES
+  ('t1', '/images/topping-redbean-v2.png'),
+  ('t2', '/images/topping-jobstears.png'),
+  ('t3', '/images/topping-corn.png'),
+  ('t4', '/images/topping-grass-jelly.png'),
+  ('t5', '/images/topping-foithong-v2.png'),
+  ('t6', '/images/topping-coconut-v2.png'),
+  ('t7', '/images/topping-jackfruit.png'),
+  ('t8', '/images/topping-grass-jelly-special.png')
+) AS images(id, path)
+WHERE topping.id = images.id AND topping.image IS DISTINCT FROM images.path;
+
+-- ทำให้รูปในออเดอร์เดิมตรงกับรูปปัจจุบันเมื่อเปิดดูประวัติ
+UPDATE order_items AS item
+SET product_image = product.image
+FROM products AS product
+WHERE item.product_id = product.id
+  AND item.product_image IS DISTINCT FROM product.image;
