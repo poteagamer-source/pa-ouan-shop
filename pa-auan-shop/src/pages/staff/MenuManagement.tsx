@@ -287,7 +287,7 @@ export function MenuManagement() {
         <StatCard icon={<CheckCircle2 className="w-5 h-5" />} iconBgClass="bg-green-50" iconColorClass="text-green-500" label="เปิดขาย" value={String(activeCount)} valueColorClass="text-green-600" sublabel="รายการ" />
         <StatCard icon={<XCircle className="w-5 h-5" />} iconBgClass="bg-red-50" iconColorClass="text-red-500" label="ปิดขาย" value={String(totalItemCount - activeCount)} valueColorClass="text-red-500" sublabel="รวมสินค้าและท็อปปิ้ง" />
         <StatCard icon={<Grid2x2 className="w-5 h-5" />} iconBgClass="bg-blue-50" iconColorClass="text-blue-500" label="หมวดหมู่สินค้า" value={String(categories.length + 1)} valueColorClass="text-blue-500" sublabel="รวมท็อปปิ้ง" />
-        <StatCard icon={<TriangleAlert className="w-5 h-5" />} iconBgClass="bg-amber-50" iconColorClass="text-amber-600" label="ท็อปปิ้งหมด" value={String(toppingOutCount)} valueColorClass={toppingOutCount > 0 ? "text-red-500" : "text-green-600"} sublabel="สต๊อกเหลือ 0" />
+        <StatCard icon={<TriangleAlert className="w-5 h-5" />} iconBgClass="bg-amber-50" iconColorClass="text-amber-600" label="หมดสต็อค" value={String(toppingOutCount)} valueColorClass={toppingOutCount > 0 ? "text-red-500" : "text-green-600"} sublabel="สต๊อกเหลือ 0" />
       </div>
 
       {message && (

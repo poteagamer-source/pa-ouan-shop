@@ -17,7 +17,6 @@ import {
 import { SHOP_SHORT } from "../../config/constants";
 import { useStaffAuth } from "../../context/StaffAuthContext";
 import { useLanguage } from "../../context/LanguageContext";
-import { LanguageToggle } from "../LanguageToggle";
 
 const managerLinks = [
   { to: "/staff", label: "หน้าหลัก", icon: Home, end: true },
@@ -69,8 +68,6 @@ export function StaffSidebar({ variant }: Props) {
         </span>
         <h1 className="hidden text-base font-bold leading-tight text-brand md:block">{SHOP_SHORT}</h1>
       </div>
-      <div className="mb-4"><LanguageToggle /></div>
-
       {variant === "manager" && (
         <p className="mb-3 hidden px-1 text-sm font-bold text-gray-800 md:block">{t("จัดการร้านค้า")}</p>
       )}

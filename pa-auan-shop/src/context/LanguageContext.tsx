@@ -25,10 +25,9 @@ const translations: Record<string, string> = {
   "สรุปยอดขายและรายการสั่งซื้อ": "Sales and order summary",
   "เชื่อมสินค้าและท็อปปิ้งที่มีอยู่ แล้วกำหนดจำนวนคงเหลือ": "Manage product and topping inventory",
   "ข้อมูลจริงจากออเดอร์ที่ลูกค้าชำระเงินสำเร็จ อัปเดตแบบเรียลไทม์": "Live data from successfully paid customer orders",
-  "เพิ่ม ลบ หรือแก้ไขข้อมูลรายการสินค้าและราคา": "Add, delete, or edit menu items and prices",
   "สินค้าทั้งหมด": "All items", "รวมท็อปปิ้ง": "Including toppings", "เปิดขาย": "Available",
   "ปิดขาย": "Unavailable", "รวมสินค้าและท็อปปิ้ง": "Products and toppings", "หมวดหมู่สินค้า": "Categories",
-  "ท็อปปิ้งหมด": "Out-of-stock toppings", "สต๊อกเหลือ 0": "Stock remaining: 0",
+  "หมดสต็อค": "Out of stock", "สต๊อกเหลือ 0": "Stock remaining: 0",
   "หมวดหมู่": "Categories", "รายการท็อปปิ้ง": "Toppings", "รายการสินค้าในหมวด": "Items in category",
   "ค้นหาสินค้า": "Search items", "ค้นหา": "Search", "เพิ่มสินค้า": "Add item", "เพิ่มท็อปปิ้ง": "Add topping",
   "ลำดับ": "No.", "รูปภาพ": "Image", "ชื่อสินค้า": "Item name", "ชื่อท็อปปิ้ง": "Topping name",
@@ -81,6 +80,7 @@ const translationEntries = Object.entries(translations).sort(([a], [b]) => b.len
 const originalText = new WeakMap<Text, string>();
 const originalAttributes = new WeakMap<Element, Map<string, string>>();
 const translatedAttributes = ["placeholder", "title", "aria-label"];
+const containsThai = (value: string) => /[\u0E00-\u0E7F]/.test(value);
 
 /** แปลข้อความที่ยังไม่ได้เรียก t() โดยแทนคำยาวก่อนเพื่อไม่ให้คำสั้นตัดคำผิด */
 function translateAll(value: string) {
@@ -99,10 +99,14 @@ function updateDomLanguage(language: Language) {
       if (saved !== undefined && current.nodeValue !== saved) current.nodeValue = saved;
     } else {
       const visible = current.nodeValue ?? "";
-      const source = saved !== undefined && visible === translateAll(saved) ? saved : visible;
-      originalText.set(current, source);
-      const translated = translateAll(source);
-      if (current.nodeValue !== translated) current.nodeValue = translated;
+      // ข้อความที่ component แปลเป็นอังกฤษด้วย t() แล้วต้องปล่อยไว้ตามเดิม
+      // เก็บต้นฉบับใหม่เฉพาะ text node ที่ยังมีภาษาไทย เช่น ชื่อจาก API/ฐานข้อมูล
+      // วิธีนี้ป้องกัน MutationObserver นำข้อความไทยเก่ามาทับข้อมูลอังกฤษที่ render ภายหลัง
+      if (containsThai(visible)) {
+        originalText.set(current, visible);
+        const translated = translateAll(visible);
+        if (current.nodeValue !== translated) current.nodeValue = translated;
+      }
     }
     current = walker.nextNode() as Text | null;
   }
@@ -116,10 +120,12 @@ function updateDomLanguage(language: Language) {
       if (language === "th") {
         if (source !== undefined && visible !== source) element.setAttribute(attribute, source);
       } else {
-        const original = source !== undefined && visible === translateAll(source) ? source : visible;
-        saved!.set(attribute, original);
-        const translated = translateAll(original);
-        if (visible !== translated) element.setAttribute(attribute, translated);
+        // เช่นเดียวกับ text node: attribute อังกฤษที่ component สร้างไว้แล้วไม่ควรถูกเขียนทับ
+        if (containsThai(visible)) {
+          saved!.set(attribute, visible);
+          const translated = translateAll(visible);
+          if (visible !== translated) element.setAttribute(attribute, translated);
+        }
       }
     });
   });
