@@ -1,6 +1,6 @@
 /** Header ลูกค้า: ชื่อร้าน ภาษา โต๊ะ ช่องค้นหา รถเข็น และ badge จำนวนรายการ */
 import { Link, useLocation } from "react-router-dom";
-import { Menu, ShoppingCart } from "lucide-react";
+import { ClipboardList, Menu, ShoppingCart } from "lucide-react";
 import { SHOP_NAME } from "../../config/constants";
 import { useCart } from "../../context/CartContext";
 import { useTable } from "../../context/TableContext";
@@ -12,7 +12,7 @@ import { useLanguage } from "../../context/LanguageContext";
 
 export function CustomerHeader() {
   const { t } = useLanguage();
-  const { cartCount } = useCart();
+  const { cartCount, lastOrderId } = useCart();
   const { tableId } = useTable();
   const paths = useCustomerPath();
   const location = useLocation();
@@ -20,6 +20,10 @@ export function CustomerHeader() {
   const { categories } = useCategories();
 
   const isMenuPage = location.pathname.endsWith("/menu");
+  const isStatusPage = location.pathname.endsWith("/status");
+  const hasRecentOrder = Boolean(
+    lastOrderId || window.localStorage.getItem(`lastOrderId:${tableId}`),
+  );
   const searchPlaceholder =
     isMenuPage && menuBrowse?.viewMode === "category"
       ? t(categories.find((c) => c.id === menuBrowse.category)?.label ?? "ค้นหาเมนู")
@@ -53,10 +57,25 @@ export function CustomerHeader() {
             />
           </div>
         )}
+        {hasRecentOrder && (
+          <Link
+            to={paths.status}
+            aria-label={t("สถานะออเดอร์")}
+            title={t("สถานะออเดอร์")}
+            className={`relative flex h-10 shrink-0 items-center justify-center gap-1.5 rounded-lg px-3 text-xs font-medium shadow-sm ${
+              isStatusPage
+                ? "bg-green-600 text-white"
+                : "border border-green-200 bg-green-50 text-green-700"
+            } ${isMenuPage ? "" : "ml-auto"}`}
+          >
+            <ClipboardList className="h-4 w-4" />
+            <span>{t("สถานะออเดอร์")}</span>
+          </Link>
+        )}
         <Link
           to={paths.cart}
           className={`relative flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-brand text-white shadow-sm ${
-            isMenuPage ? "" : "ml-auto"
+            isMenuPage || hasRecentOrder ? "" : "ml-auto"
           }`}
         >
           <ShoppingCart className="w-5 h-5" />

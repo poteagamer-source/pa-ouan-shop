@@ -11,7 +11,7 @@ const translations: Record<string, string> = {
   "ผู้จัดการ": "Manager", "ห้องครัว": "Kitchen", "พนักงานเสิร์ฟ": "Waiter",
   "หน้าห้องครัว": "Kitchen home", "รายการออเดอร์ใหม่": "New orders", "กำลังทำอาหาร": "Cooking",
   "พร้อมเสิร์ฟ": "Ready to serve", "เสิร์ฟแล้ว": "Served", "งานของฉัน": "My tasks",
-  "แก้ไข": "Edit items", "ย้อนกลับ": "Back", "ชำระเงิน": "Payment", "เลือกเมนู": "Choose menu",
+  "แก้ไข": "Edit items", "ย้อนกลับ": "Back", "ชำระเงิน": "Payment", "เลือกเมนู": "Choose menu", "สถานะออเดอร์": "Order status",
   "ยังไม่มีสินค้าในตะกร้า": "Your cart is empty", "หน้าหลักลูกค้า": "Customer home",
   "แนะนำ": "Recommended", "ขายดี": "Bestsellers", "สั่งอาหารเพิ่ม": "Add more items",
   "ค้นหาเมนู": "Search menu", "โต๊ะ": "Table", "ออกจากระบบ": "Sign out",

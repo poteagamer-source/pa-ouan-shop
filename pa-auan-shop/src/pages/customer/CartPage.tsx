@@ -32,7 +32,14 @@ export function CartPage() {
           </div>
         ) : (
           <>
-            <p className="text-right text-xs text-brand mb-2 cursor-pointer">{t("แก้ไข")}</p>
+            <div className="mb-2 text-right">
+              <Link
+                to={paths.menu}
+                className="inline-flex min-h-10 items-center rounded-lg px-3 text-xs font-medium text-brand hover:bg-brand-light focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/40"
+              >
+                {t("แก้ไข")}
+              </Link>
+            </div>
             <OrderSummaryCard items={items} total={total} />
 
             <img
