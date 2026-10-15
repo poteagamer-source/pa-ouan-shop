@@ -31,7 +31,7 @@ function PrintDialog({ orderId, kind, onClose }: { orderId: string; kind: Kind; 
   const [paper, setPaper] = useState<'58' | '80'>(() => {
     try { return localStorage.getItem('receipt-paper-width') === '58' ? '58' : '80'; } catch { return '80'; }
   });
-  const title = kind === 'receipt' ? 'ใบแจ้งหนี้ / ใบเสร็จรับเงิน' : 'ใบสั่งอาหารสำหรับครัว';
+  const title = kind === 'receipt' ? 'ใบเสร็จรับเงิน' : 'ใบสั่งอาหารสำหรับครัว';
 
   async function load(): Promise<Snapshot> {
     const order = await fetchOrder(orderId);
@@ -96,8 +96,8 @@ function PrintDialog({ orderId, kind, onClose }: { orderId: string; kind: Kind; 
       <button type="button" disabled={busy} onClick={() => void print()} className="mt-3 rounded bg-gray-900 px-4 py-2 text-white disabled:opacity-50">{busy ? 'กำลังโหลด...' : 'สั่งพิมพ์'}</button>
     </div>
     {order && kind === 'receipt' && <article className="invoice-sheet" aria-label="เอกสารสำหรับพิมพ์">
-      <header className="invoice-header"><div><h1>Invoice</h1><p className="invoice-document-title">ใบแจ้งหนี้ / ใบเสร็จรับเงิน{copy ? ' (สำเนา)' : ''}</p></div><div className="invoice-mark" aria-hidden="true">฿</div></header>
-      <section className="invoice-meta"><div><p><strong>Invoice number</strong><span>{order.id}</span></p><p><strong>Date of issue</strong><span>{String(order.date).slice(0, 10)}</span></p><p><strong>Payment date</strong><span>{receiptDate(order.paidAt)}</span></p></div></section>
+      <header className="invoice-header"><div><h1>ใบเสร็จรับเงิน</h1><p className="invoice-document-title">Receipt{copy ? ' (สำเนา)' : ''}</p></div><div className="invoice-mark" aria-hidden="true">฿</div></header>
+      <section className="invoice-meta"><div><p><strong>เลขที่ใบเสร็จ</strong><span>{order.id}</span></p><p><strong>วันที่ออกเอกสาร</strong><span>{String(order.date).slice(0, 10)}</span></p><p><strong>วันที่ชำระเงิน</strong><span>{receiptDate(order.paidAt)}</span></p></div></section>
       <section className="invoice-parties"><div><h2>From</h2><p>{SHOP_INVOICE.legalName}</p>{SHOP_INVOICE.addressLines.map(line => <p key={line}>{line}</p>)}{SHOP_INVOICE.phone && <p>{SHOP_INVOICE.phone}</p>}{SHOP_INVOICE.email && <p>{SHOP_INVOICE.email}</p>}{SHOP_INVOICE.taxId && <p>Tax ID: {SHOP_INVOICE.taxId}</p>}</div><div><h2>Bill to</h2><p>ลูกค้าโต๊ะ {order.table}</p><p>ออเดอร์รับประทานที่ร้าน</p></div></section>
       {order.paymentStatus === 'partially_refunded' && <p className="invoice-status">คืนเงินบางส่วนแล้ว</p>}
       {order.paymentStatus === 'refunded' && <p className="invoice-status">คืนเงินทั้งหมดแล้ว</p>}
