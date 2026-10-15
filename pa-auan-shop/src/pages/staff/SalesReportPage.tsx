@@ -1,7 +1,6 @@
 /** รายงานยอดขายตามเวลารับเงินจริง: เลือกย้อนหลัง กราฟ สรุป ตาราง และ Export Excel */
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { BellRing, Calendar, Download, FileCheck, FileText, Loader2 } from "lucide-react";
-import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { useCallback, useEffect, useState } from "react";
+import { BellRing, Download, FileCheck, FileText, Loader2 } from "lucide-react";
 import { PageHeader } from "../../components/staff/PageHeader";
 import { StatCard } from "../../components/staff/StatCard";
 import { MonthlySalesTable } from "../../components/staff/MonthlySalesTable";
@@ -46,14 +45,6 @@ export function SalesReportPage() {
   const currency = orders[0]?.currency ?? "THB";
   const money = (value: number) => new Intl.NumberFormat("th-TH", { style: "currency", currency }).format(value);
   const total = orders.reduce((sum, order) => sum + order.total, 0);
-  const average = orders.length ? total / orders.length : 0;
-  const sorted = [...orders].sort((a, b) => b.total - a.total);
-  const hourlySales = useMemo(() => {
-    const values = Array.from({ length: 24 }, (_, hour) => ({ time: `${String(hour).padStart(2, "0")}:00`, value: 0 }));
-    orders.forEach((order) => { const hour = Number(order.time?.slice(0, 2)); if (Number.isInteger(hour) && values[hour]) values[hour].value += order.total; });
-    return values;
-  }, [orders]);
-  const peak = hourlySales.reduce((best, row) => row.value > best.value ? row : best, hourlySales[0]);
 
   return <div className="max-w-6xl">
     <PageHeader title="รายงานยอดขาย" subtitle="ข้อมูลตามเวลาที่ชำระเงินจริง เลือกดูย้อนหลังและ Export Excel ได้" />
@@ -78,12 +69,6 @@ export function SalesReportPage() {
     <MonthlySalesTable />
 
     {!loading && !error && <>
-      {/* กราฟและสรุปช่วงที่เลือก */}
-      <div className="mb-6 grid grid-cols-1 gap-6 lg:grid-cols-[1fr_320px]">
-        <div className="rounded-2xl border bg-white p-5 shadow-sm"><div className="mb-4 flex justify-between"><p className="text-sm font-semibold">ยอดขายแยกตามช่วงเวลา</p><span className="flex items-center gap-1 text-xs text-gray-400"><Calendar className="h-3.5 w-3.5" />{from} – {to}</span></div><ResponsiveContainer width="100%" height={220}><AreaChart data={hourlySales}><CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0"/><XAxis dataKey="time" interval={3} tick={{fontSize:11}}/><YAxis tick={{fontSize:11}} tickFormatter={(value) => `฿${value}`}/><Tooltip formatter={(value: number) => [money(value), "ยอดขาย"]}/><Area type="monotone" dataKey="value" stroke="#ff6600" fill="#ff660033"/></AreaChart></ResponsiveContainer><div className="mt-4 grid grid-cols-3 text-center"><div><p className="text-xs text-gray-400">ยอดขายรวม</p><b className="text-green-600">{money(total)}</b></div><div><p className="text-xs text-gray-400">ออเดอร์</p><b>{orders.length}</b></div><div><p className="text-xs text-gray-400">เฉลี่ยต่อออเดอร์</p><b className="text-green-600">{money(average)}</b></div></div></div>
-        <div className="rounded-2xl border bg-white p-5 shadow-sm"><p className="mb-4 text-sm font-semibold">สรุปตามช่วงวันที่</p><div className="space-y-4 text-sm"><div><p>ยอดขายสูงสุด</p><b className="text-brand">{money(sorted[0]?.total ?? 0)}</b></div><div><p>ยอดขายต่ำสุด</p><b className="text-brand">{money(sorted.at(-1)?.total ?? 0)}</b></div><div><p>ช่วงเวลาพีค</p><b className="text-brand">{peak?.value ? `${peak.time} (${money(peak.value)})` : "-"}</b></div></div></div>
-      </div>
-
       {/* รายการที่ชำระสำเร็จ ใช้วันที่/เวลารับเงินจริงจาก API */}
       <div className="rounded-2xl border bg-white p-5 shadow-sm"><p className="mb-4 text-sm font-semibold">รายการขาย ({orders.length} รายการ)</p><div className="overflow-x-auto"><table className="w-full text-sm"><thead><tr className="border-b text-left text-gray-400"><th className="py-2">Order ID</th><th>วันที่รับเงิน</th><th>โต๊ะ</th><th>รายการ</th><th>ยอดรวม</th><th>เวลา</th><th>ช่องเงิน</th></tr></thead><tbody>{orders.length === 0 && <tr><td colSpan={7} className="py-10 text-center text-gray-400">ไม่พบรายการขายที่ชำระเงินสำเร็จในช่วงนี้</td></tr>}{orders.map((order) => <tr key={order.id} className="border-b border-gray-50"><td className="py-3 text-gray-500">{order.id}</td><td>{displayDate(order.date)}</td><td className="font-medium text-brand">{order.table}</td><td className="max-w-56 truncate">{order.items.map((item) => `${item.name} ×${item.qty}`).join(", ")}</td><td className="font-semibold text-red-500">{money(order.total)}</td><td>{displayTime(order.time)} น.</td><td><span className="inline-flex items-center gap-1 text-xs text-green-600"><FileCheck className="h-3.5 w-3.5"/>ชำระเงินแล้ว</span></td></tr>)}</tbody></table></div></div>
     </>}
