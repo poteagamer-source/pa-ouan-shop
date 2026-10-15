@@ -4,6 +4,7 @@ import { BellRing, Calendar, Download, FileCheck, FileText, Loader2 } from "luci
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { PageHeader } from "../../components/staff/PageHeader";
 import { StatCard } from "../../components/staff/StatCard";
+import { MonthlySalesTable } from "../../components/staff/MonthlySalesTable";
 import { fetchSales, subscribeToUpdates } from "../../lib/api";
 import type { SalesOrder } from "../../types";
 
@@ -73,6 +74,8 @@ export function SalesReportPage() {
     </div>
     {loading && <div className="flex justify-center gap-2 py-12 text-sm text-gray-500"><Loader2 className="h-4 w-4 animate-spin" />กำลังโหลดข้อมูล</div>}
     {error && <p className="mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-600">{error}</p>}
+
+    <MonthlySalesTable />
 
     {!loading && !error && <>
       {/* กราฟและสรุปช่วงที่เลือก */}
