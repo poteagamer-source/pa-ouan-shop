@@ -1,7 +1,8 @@
 /** หน้าติดตามออเดอร์หลัง Stripe: poll สถานะและแสดง progress ชำระเงิน→เสิร์ฟ */
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { CheckCircle2, Circle, Clock3, Loader2, Printer } from "lucide-react";
+import { CheckCircle2, Circle, Clock3, Loader2 } from "lucide-react";
+import { OrderPrintButton } from "../../components/OrderPrintButton";
 import { CustomerPageLayout } from "../../components/customer/CustomerPageLayout";
 import { OrderSummaryCard } from "../../components/OrderSummaryCard";
 import { useCart } from "../../context/CartContext";
@@ -143,11 +144,10 @@ export function OrderStatusPage() {
                   <div>
                     <p className="font-semibold text-green-700">ใบเสร็จรับเงิน</p>
                     <p className="text-xs text-gray-500">เลขที่ {order.id} · โต๊ะ {order.table}</p>
-                    <p className="mt-1 text-sm font-bold text-gray-800">{new Intl.NumberFormat(undefined, { style: "currency", currency: order.currency }).format(order.total)}</p>
+                    <p className="mt-1 text-sm font-bold text-gray-800">ยอดสินค้า: {new Intl.NumberFormat(undefined, { style: "currency", currency: order.currency }).format(order.total)}</p>
+                    {order.paymentStatus !== 'succeeded' && <p className="text-xs text-purple-700">{order.paymentStatus === 'refunded' ? 'คืนเงินทั้งหมดแล้ว' : 'คืนเงินบางส่วนแล้ว'} · ดูยอดคืนเงินในใบเสร็จ</p>}
                   </div>
-                  <button type="button" onClick={() => window.print()} className="flex shrink-0 items-center gap-1 rounded-lg border border-green-200 px-3 py-2 text-xs font-medium text-green-700">
-                    <Printer className="h-4 w-4" /> พิมพ์ใบเสร็จ
-                  </button>
+                  <OrderPrintButton orderId={order.id} />
                 </div>
               </div>
             )}

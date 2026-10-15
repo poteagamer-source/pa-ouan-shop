@@ -6,6 +6,15 @@ import type { CategoryId } from "../types";
 export const SHOP_NAME = "ร้านบัวลอยแป๊ะอ้วน สาขาหาดใหญ่";
 export const SHOP_SHORT = "ร้านบัวลอยแป๊ะอ้วน";
 
+/** ข้อมูลผู้ออกเอกสารสำหรับ Invoice; เปลี่ยนก่อนเปิดใช้เอกสารทางการ */
+export const SHOP_INVOICE = {
+  legalName: SHOP_NAME,
+  addressLines: ["หาดใหญ่ สงขลา", "ประเทศไทย"],
+  phone: "",
+  email: "",
+  taxId: "",
+} as const;
+
 /** โทนสีต่อหมวดหมู่ ใช้กับหน้าจัดการเมนู/สต๊อกสินค้าในโซนผู้จัดการ */
 export const categoryMeta: Record<
   CategoryId,
