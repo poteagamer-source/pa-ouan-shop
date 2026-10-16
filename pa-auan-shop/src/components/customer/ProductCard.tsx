@@ -1,3 +1,4 @@
+import { OptimizedImage } from '../OptimizedImage';
 /** การ์ดสินค้าใน grid: รูป ชื่อแปลภาษา ราคา และลิงก์ไปหน้ารายละเอียด */
 import { Link } from "react-router-dom";
 import type { Product } from "../../types";
@@ -7,9 +8,10 @@ import { useLanguage } from "../../context/LanguageContext";
 interface Props {
   product: Product;
   selected?: boolean;
+  priority?: boolean;
 }
 
-export function ProductCard({ product, selected }: Props) {
+export function ProductCard({ product, selected, priority = false }: Props) {
   const paths = useCustomerPath();
   const { t } = useLanguage();
 
@@ -20,8 +22,9 @@ export function ProductCard({ product, selected }: Props) {
         selected ? "border-accent-blue-dark ring-1 ring-accent-blue-dark/40" : "border-transparent"
       }`}
     >
-      <img
+      <OptimizedImage
         src={product.image}
+        loading={priority ? "eager" : "lazy"}
         alt={t(product.name)}
         className="w-full aspect-square object-cover rounded-lg"
       />

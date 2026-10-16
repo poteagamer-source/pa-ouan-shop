@@ -1,3 +1,4 @@
+import { OptimizedImage } from '../../components/OptimizedImage';
 /** หน้าตะกร้า: แสดงรายการแยกการ์ด ยอดรวม และทางกลับเมนู/ไปชำระเงิน */
 import { Link } from "react-router-dom";
 import { CustomerPageLayout } from "../../components/customer/CustomerPageLayout";
@@ -17,7 +18,7 @@ export function CartPage() {
       <div className="px-4 py-4 relative min-h-[50dvh]">
         {items.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 text-center">
-            <img
+            <OptimizedImage
               src={images.logoMascot}
               alt=""
               className="w-32 h-32 object-contain opacity-40 mb-4"
@@ -42,7 +43,7 @@ export function CartPage() {
             </div>
             <OrderSummaryCard items={items} total={total} />
 
-            <img
+            <OptimizedImage
               src={images.logoMascot}
               alt=""
               className="pointer-events-none absolute bottom-8 left-1/2 -translate-x-1/2 w-44 h-44 object-contain opacity-25"

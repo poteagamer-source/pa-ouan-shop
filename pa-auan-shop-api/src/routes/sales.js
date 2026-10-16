@@ -35,7 +35,7 @@ router.get("/", async (req, res, next) => {
     const { rows } = await query(
       `SELECT
           o.id, o.table_name, o.total, o.amount_minor, o.currency,
-          ${SALE_DATE} AS sale_date, ${SALE_TIME} AS sale_time,
+          to_char(${SALE_DATE}, 'YYYY-MM-DD') AS sale_date, ${SALE_TIME} AS sale_time,
           o.payment_verified, o.slip_image,
           COALESCE(
             json_agg(
@@ -96,7 +96,7 @@ router.get("/summary", async (req, res, next) => {
     );
 
     const byDay = await query(
-      `SELECT ${SALE_DATE} AS date, COALESCE(SUM(o.total),0) AS revenue, COUNT(*) AS order_count
+      `SELECT to_char(${SALE_DATE}, 'YYYY-MM-DD') AS date, COALESCE(SUM(o.total),0) AS revenue, COUNT(*) AS order_count
        FROM orders o WHERE ${where}
        GROUP BY ${SALE_DATE} ORDER BY ${SALE_DATE}`,
       params

@@ -1,36 +1,40 @@
+import { lazy, Suspense } from "react";
 /** Route tree หลัก กำหนด Provider, guards และหน้าที่ role แต่ละประเภทเข้าถึงได้ */
 import { BrowserRouter, Navigate, Outlet, Route, Routes } from "react-router-dom";
 import { CartProvider } from "./context/CartContext";
 import { CategoriesProvider } from "./context/CategoriesContext";
 import { StaffLayout } from "./components/staff/StaffLayout";
 import { CustomerRouteGuard } from "./components/customer/CustomerRouteGuard";
-import { RoleSelect } from "./pages/RoleSelect";
-import { CustomerQrEntry } from "./pages/qr/CustomerQrEntry";
-import { StaffQrEntry } from "./pages/qr/StaffQrEntry";
-import { TableQrEntry } from "./pages/qr/TableQrEntry";
-import { HomePage } from "./pages/customer/HomePage";
-import { ProductDetailPage } from "./pages/customer/ProductDetailPage";
-import { CartPage } from "./pages/customer/CartPage";
-import { PaymentPage } from "./pages/customer/PaymentPage";
-import { OrderStatusPage } from "./pages/customer/OrderStatusPage";
-import { ManagerDashboard } from "./pages/staff/ManagerDashboard";
-import { MenuManagement } from "./pages/staff/MenuManagement";
-import { KitchenOrdersProvider } from "./context/KitchenOrdersContext";
-import { KitchenHomePage } from "./pages/staff/kitchen/KitchenHomePage";
-import { KitchenOrdersPage } from "./pages/staff/kitchen/KitchenOrdersPage";
-import { KitchenCookingPage } from "./pages/staff/kitchen/KitchenCookingPage";
-import { KitchenReadyPage } from "./pages/staff/kitchen/KitchenReadyPage";
-import { WaiterTasksPage } from "./pages/staff/waiter/WaiterTasksPage";
-import { WaiterServedPage } from "./pages/staff/waiter/WaiterServedPage";
-import { QrCodesPage } from "./pages/staff/QrCodesPage";
-import { PurchaseOrdersPage } from "./pages/staff/PurchaseOrdersPage";
-import { StockPage } from "./pages/staff/StockPage";
-import { SalesReportPage } from "./pages/staff/SalesReportPage";
-import { StaffRouteGuard } from "./components/staff/StaffRouteGuard";
-import { StaffManagementPage } from "./pages/staff/StaffManagementPage";
 
-/** เดิม — redirect ไปหน้าแรก (ต้องสแกน QR) */
-// เส้นทางเก่าสำหรับลูกค้า: บังคับให้เริ่มจากการสแกน QR ที่โต๊ะ
+import { KitchenOrdersProvider } from "./context/KitchenOrdersContext";
+
+import { StaffRouteGuard } from "./components/staff/StaffRouteGuard";
+
+// Load each page only when its route is visited.
+const RoleSelect = lazy(() => import("./pages/RoleSelect").then(module => ({ default: module.RoleSelect })));
+const CustomerQrEntry = lazy(() => import("./pages/qr/CustomerQrEntry").then(module => ({ default: module.CustomerQrEntry })));
+const StaffQrEntry = lazy(() => import("./pages/qr/StaffQrEntry").then(module => ({ default: module.StaffQrEntry })));
+const TableQrEntry = lazy(() => import("./pages/qr/TableQrEntry").then(module => ({ default: module.TableQrEntry })));
+const HomePage = lazy(() => import("./pages/customer/HomePage").then(module => ({ default: module.HomePage })));
+const ProductDetailPage = lazy(() => import("./pages/customer/ProductDetailPage").then(module => ({ default: module.ProductDetailPage })));
+const CartPage = lazy(() => import("./pages/customer/CartPage").then(module => ({ default: module.CartPage })));
+const PaymentPage = lazy(() => import("./pages/customer/PaymentPage").then(module => ({ default: module.PaymentPage })));
+const OrderStatusPage = lazy(() => import("./pages/customer/OrderStatusPage").then(module => ({ default: module.OrderStatusPage })));
+const ManagerDashboard = lazy(() => import("./pages/staff/ManagerDashboard").then(module => ({ default: module.ManagerDashboard })));
+const MenuManagement = lazy(() => import("./pages/staff/MenuManagement").then(module => ({ default: module.MenuManagement })));
+const KitchenHomePage = lazy(() => import("./pages/staff/kitchen/KitchenHomePage").then(module => ({ default: module.KitchenHomePage })));
+const KitchenOrdersPage = lazy(() => import("./pages/staff/kitchen/KitchenOrdersPage").then(module => ({ default: module.KitchenOrdersPage })));
+const KitchenCookingPage = lazy(() => import("./pages/staff/kitchen/KitchenCookingPage").then(module => ({ default: module.KitchenCookingPage })));
+const KitchenReadyPage = lazy(() => import("./pages/staff/kitchen/KitchenReadyPage").then(module => ({ default: module.KitchenReadyPage })));
+const WaiterTasksPage = lazy(() => import("./pages/staff/waiter/WaiterTasksPage").then(module => ({ default: module.WaiterTasksPage })));
+const WaiterServedPage = lazy(() => import("./pages/staff/waiter/WaiterServedPage").then(module => ({ default: module.WaiterServedPage })));
+const QrCodesPage = lazy(() => import("./pages/staff/QrCodesPage").then(module => ({ default: module.QrCodesPage })));
+const PurchaseOrdersPage = lazy(() => import("./pages/staff/PurchaseOrdersPage").then(module => ({ default: module.PurchaseOrdersPage })));
+const StockPage = lazy(() => import("./pages/staff/StockPage").then(module => ({ default: module.StockPage })));
+const SalesReportPage = lazy(() => import("./pages/staff/SalesReportPage").then(module => ({ default: module.SalesReportPage })));
+const StaffManagementPage = lazy(() => import("./pages/staff/StaffManagementPage").then(module => ({ default: module.StaffManagementPage })));
+
+/** เส้นทางเก่าของลูกค้าให้กลับไปเริ่มจากการสแกน QR */
 function LegacyCustomerRedirect() {
   return <Navigate to="/?hint=scan-table-qr" replace />;
 }
@@ -41,6 +45,7 @@ export default function App() {
     <CategoriesProvider>
     <CartProvider>
       <BrowserRouter>
+        <Suspense fallback={<div role="status" className="p-6 text-center text-gray-500">กำลังโหลด...</div>}>
         <Routes>
           {/* หน้าเริ่มต้นสำหรับเลือกว่าจะเข้าใช้งานในบทบาทใด */}
           <Route path="/" element={<RoleSelect />} />
@@ -108,6 +113,7 @@ export default function App() {
           {/* URL ที่ไม่รู้จักให้กลับไปหน้าเลือกบทบาท */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
+        </Suspense>
       </BrowserRouter>
     </CartProvider>
     </CategoriesProvider>

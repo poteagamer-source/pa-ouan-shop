@@ -1,3 +1,4 @@
+import { OptimizedImage } from '../components/OptimizedImage';
 /** หน้าแรกเลือกทางเข้าลูกค้า/พนักงาน และแสดงปุ่มเปลี่ยนภาษาก่อนเข้าสู่ระบบ */
 import { Link, useSearchParams } from "react-router-dom";
 import { QrCode, Smartphone } from "lucide-react";
@@ -17,7 +18,7 @@ export function RoleSelect() {
     <div className="relative min-h-dvh flex flex-col items-center justify-center bg-gradient-to-b from-brand-light to-white p-6">
       <div className="absolute right-4 top-4"><LanguageToggle /></div>
       <div className="text-center mb-6">
-        <img
+        <OptimizedImage
           src={images.logoMascot}
           alt={SHOP_SHORT}
           className="w-28 h-28 mx-auto mb-4 rounded-full object-cover shadow-lg border-4 border-white"

@@ -1,3 +1,4 @@
+import { OptimizedImage } from '../../components/OptimizedImage';
 /** Manager สร้าง QR token ใหม่ เลือกโต๊ะ และลบ QR เก่าออกจาก Neon */
 import { useEffect, useState, type FormEvent } from "react";
 import { Loader2, Plus, QrCode, RefreshCw, Trash2 } from "lucide-react";
@@ -6,7 +7,7 @@ import { isValidTableId, normalizeTableId, staffPortalUrl, tokenOrderUrl } from 
 
 function QrImage({ url, title }: { url: string; title: string }) {
   const src = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(url)}`;
-  return <><img src={src} alt={`QR ${title}`} className="mx-auto h-[180px] w-[180px]"/><p className="mt-3 break-all text-center font-mono text-[10px] text-gray-400">{url}</p></>;
+  return <><OptimizedImage src={src} alt={`QR ${title}`} className="mx-auto h-[180px] w-[180px]"/><p className="mt-3 break-all text-center font-mono text-[10px] text-gray-400">{url}</p></>;
 }
 
 export function QrCodesPage() {

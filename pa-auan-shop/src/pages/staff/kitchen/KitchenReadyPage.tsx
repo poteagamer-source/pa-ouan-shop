@@ -1,3 +1,4 @@
+import { HistoryPagination } from "../../../components/staff/kitchen/HistoryPagination";
 /** หน้าออเดอร์ ready เพื่อให้ครัวตรวจรายการที่รอ waiter นำไปเสิร์ฟ */
 import { CheckCircle2, ConciergeBell } from "lucide-react";
 import { PageHeader } from "../../../components/staff/PageHeader";
@@ -39,13 +40,14 @@ export function KitchenReadyPage() {
 
         <div className="rounded-2xl border border-blue-200 p-4">
           <h2 className="flex items-center gap-2 text-sm font-semibold text-blue-500 mb-4">
-            <CheckCircle2 className="w-4 h-4" /> เสิร์ฟแล้ว ({servedOrders.length})
+            <CheckCircle2 className="w-4 h-4" /> เสิร์ฟแล้ว ({counts.served})
           </h2>
           {servedOrders.length === 0 ? (
             <p className="text-sm text-gray-400 text-center py-10">ยังไม่มีออเดอร์ที่เสิร์ฟแล้ว</p>
           ) : (
             servedOrders.map((order) => <ServedMiniCard key={order.id} order={order} />)
           )}
+          <HistoryPagination />
         </div>
       </div>
     </div>

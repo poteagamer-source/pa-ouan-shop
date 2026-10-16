@@ -1,3 +1,4 @@
+import { OptimizedImage } from '../../components/OptimizedImage';
 /** หน้า legacy ตัวอย่าง waiter ไม่ได้ถูก route หลักใช้; หน้าจริงอยู่ pages/staff/waiter */
 import { Check } from "lucide-react";
 import { images } from "../../data/images";
@@ -25,7 +26,7 @@ export function WaiterPage() {
             <p className="text-sm font-semibold">Table: {order.table}</p>
             <p className="text-xs text-gray-500 mb-4">{order.datetime}</p>
             <div className="flex gap-3 mb-3">
-              <img
+              <OptimizedImage
                 src={order.image}
                 alt=""
                 className="w-14 h-14 rounded-full object-cover"
@@ -57,7 +58,7 @@ export function WaiterPage() {
             <p className="text-sm font-semibold">Table: {order.table}</p>
             <p className="text-xs text-gray-500 mb-4">{order.datetime}</p>
             <div className="flex gap-3">
-              <img
+              <OptimizedImage
                 src={order.image}
                 alt=""
                 className="w-14 h-14 rounded-full object-cover"

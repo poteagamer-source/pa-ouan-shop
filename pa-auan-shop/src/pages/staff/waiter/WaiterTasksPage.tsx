@@ -1,3 +1,4 @@
+import { HistoryPagination } from "../../../components/staff/kitchen/HistoryPagination";
 /** งาน waiter ปัจจุบัน: รับเฉพาะออเดอร์ ready และยืนยันเป็น served */
 import { useState } from "react";
 import { ConciergeBell, CheckCircle2 } from "lucide-react";
@@ -8,11 +9,11 @@ import { WaiterTaskCard } from "../../../components/staff/kitchen/WaiterTaskCard
 import { useKitchenOrders } from "../../../context/KitchenOrdersContext";
 
 export function WaiterTasksPage() {
-  const { counts, byStatus, advance, pendingOrderIds, error } = useKitchenOrders();
+  const { counts, byStatus, advance, pendingOrderIds, error, recentServed: latestServed } = useKitchenOrders();
   const [confirmation, setConfirmation] = useState<string | null>(null);
   const readyOrders = byStatus("ready");
   const servedOrders = byStatus("served");
-  const recentServed = servedOrders.slice(0, 3);
+  const recentServed = latestServed.slice(0, 3);
   const confirmServed = async (id: string) => {
     setConfirmation(null);
     const succeeded = await advance(id);
@@ -135,12 +136,7 @@ export function WaiterTasksPage() {
             ))}
           </tbody>
         </table></div>
-        <button
-          type="button"
-          className="w-full mt-3 rounded-lg border border-gray-200 py-2 text-xs text-gray-500 hover:bg-gray-50 transition-colors"
-        >
-          ดูทั้งหมด
-        </button>
+        <HistoryPagination />
       </div>
     </div>
   );

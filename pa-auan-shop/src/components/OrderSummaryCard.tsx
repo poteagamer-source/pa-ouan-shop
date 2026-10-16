@@ -1,3 +1,4 @@
+import { OptimizedImage } from './OptimizedImage';
 /** การ์ดสรุปตะกร้า/ออเดอร์ แยกแต่ละเมนู ท็อปปิ้ง อุณหภูมิ และยอดรวม */
 import type { CartItem } from "../types";
 import { useLanguage } from "../context/LanguageContext";
@@ -23,7 +24,7 @@ export function OrderSummaryCard({ items, total, showTag = true, currency = "THB
         return (
           <article key={`${item.productId}-${item.temperature}-${index}`} className="rounded-xl border border-gray-100 bg-white p-4 shadow-md">
             <div className="flex gap-3">
-              <img src={item.productImage} alt={t(item.productName)} className="h-20 w-20 shrink-0 rounded-lg object-cover" />
+              <OptimizedImage src={item.productImage} alt={t(item.productName)} className="h-20 w-20 shrink-0 rounded-lg object-cover" />
               <div className="min-w-0 flex-1 text-sm">
                 <div className="flex items-start justify-between gap-2">
                   <p className="font-semibold text-gray-800">{t(item.productName)}</p>

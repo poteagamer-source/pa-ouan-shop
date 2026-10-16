@@ -1,3 +1,5 @@
+import { OptimizedImage } from '../../OptimizedImage';
+import { OrderPrintButton } from '../../OrderPrintButton';
 /** การ์ดออเดอร์สถานะ cooking พร้อมปุ่มเลื่อนไป ready และสถานะกำลังบันทึก */
 import { Clock, CheckCircle2 } from "lucide-react";
 import type { KitchenOrder } from "../../../context/KitchenOrdersContext";
@@ -36,7 +38,7 @@ export function CookingOrderCard({ order, onAdvance, busy = false }: CookingOrde
         </p>
         {order.items.map((item) => (
           <div key={item.id} className="flex items-center gap-3 text-sm mb-2 last:mb-0">
-            <img src={item.image} alt="" className="w-10 h-10 rounded-full object-cover shrink-0" />
+            <OptimizedImage src={item.image} alt="" className="w-10 h-10 rounded-full object-cover shrink-0" />
             <span className="flex-1 text-gray-700">
               {item.name} {item.qty} <span className="text-red-400">฿ {item.price.toFixed(2)}</span>
             </span>
@@ -45,6 +47,7 @@ export function CookingOrderCard({ order, onAdvance, busy = false }: CookingOrde
         <p className="text-sky-500 text-xs mt-1">{order.note}</p>
       </div>
 
+      <div className="mb-3"><OrderPrintButton orderId={order.id} kind="kitchen" /></div>
       <button
         type="button"
         onClick={() => void onAdvance(order.id)}

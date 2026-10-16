@@ -1,3 +1,4 @@
+import { OptimizedImage } from '../../components/OptimizedImage';
 /** ทางเข้า QR พนักงาน: login และ setup manager คนแรกเมื่อฐานข้อมูลยังว่าง */
 import { useEffect, useState, type FormEvent } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
@@ -54,7 +55,7 @@ export function StaffQrEntry() {
   return (
     <div className="flex min-h-dvh items-center justify-center bg-gradient-to-b from-gray-100 to-white p-6">
       <form onSubmit={submit} noValidate className="w-full max-w-sm rounded-2xl border border-gray-200 bg-white p-6 shadow-lg">
-        <img src={images.logoMascot} alt={SHOP_SHORT} className="mx-auto mb-3 h-20 w-20 rounded-full border-2 border-white object-cover shadow" />
+        <OptimizedImage src={images.logoMascot} alt={SHOP_SHORT} className="mx-auto mb-3 h-20 w-20 rounded-full border-2 border-white object-cover shadow" />
         <div className="mb-2 flex items-center justify-center gap-1.5 text-xs text-gray-500"><QrCode className="h-3.5 w-3.5" /> QR พนักงาน</div>
         <h1 className="text-center text-xl font-bold text-gray-800">{setupRequired ? "ตั้งค่าผู้จัดการคนแรก" : `เข้าสู่ระบบ ${SHOP_SHORT}`}</h1>
         <p className="mb-6 mt-1 text-center text-xs text-gray-500">{setupRequired ? "สร้างได้ครั้งเดียว จากนั้นเพิ่มพนักงานผ่านหน้าผู้จัดการ" : "ระบบจะเปิดหน้าทำงานตาม role ของบัญชีโดยอัตโนมัติ"}</p>

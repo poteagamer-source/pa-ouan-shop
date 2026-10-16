@@ -1,3 +1,4 @@
+import { OptimizedImage } from '../../../components/OptimizedImage';
 /** ภาพรวมครัว: จำนวนทุกสถานะ รายการล่าสุด งานพร้อมเสิร์ฟ และคำอธิบายสี */
 import { ChefHat, ConciergeBell } from "lucide-react";
 import { PageHeader } from "../../../components/staff/PageHeader";
@@ -27,7 +28,7 @@ function ColumnOrderCard({
       </div>
       {order.items.map((item) => (
         <div key={item.id} className="flex items-center gap-2 text-xs mb-1.5">
-          <img src={item.image} alt="" className="w-8 h-8 rounded-full object-cover shrink-0" />
+          <OptimizedImage src={item.image} alt="" className="w-8 h-8 rounded-full object-cover shrink-0" />
           <span className="flex-1 text-gray-700">{item.name}</span>
           <span className="text-gray-400">{item.qty}</span>
           <span className="text-gray-800 font-medium">฿ {item.price.toFixed(2)}</span>

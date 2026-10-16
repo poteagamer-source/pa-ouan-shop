@@ -1,3 +1,4 @@
+import { OptimizedImage } from '../../OptimizedImage';
 /** การ์ดขนาดย่อของออเดอร์ที่เสิร์ฟแล้ว ใช้แสดงประวัติล่าสุด */
 import type { KitchenOrder } from "../../../context/KitchenOrdersContext";
 
@@ -20,7 +21,7 @@ export function ServedMiniCard({ order }: { order: KitchenOrder }) {
       </div>
       {firstItem && (
         <div className="flex items-center gap-3 mb-2">
-          <img src={firstItem.image} alt="" className="w-12 h-12 rounded-full object-cover shrink-0" />
+          <OptimizedImage src={firstItem.image} alt="" className="w-12 h-12 rounded-full object-cover shrink-0" />
           <p className="text-sm text-gray-700 flex-1">
             {order.items.map((i) => i.name).join(" + ")} ({order.items.length})
           </p>

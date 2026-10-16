@@ -1,3 +1,5 @@
+import { OptimizedImage } from '../../OptimizedImage';
+import { OrderPrintButton } from '../../OrderPrintButton';
 /** แถวสรุปออเดอร์พร้อมเสิร์ฟ ใช้ในหน้าครัวเพื่อส่งต่องานให้ waiter */
 import { Clock } from "lucide-react";
 import type { KitchenOrder } from "../../../context/KitchenOrdersContext";
@@ -14,7 +16,7 @@ export function ReadyOrderRow({ order }: { order: KitchenOrder }) {
 
       <div className="flex items-center gap-3 flex-1 min-w-[180px]">
         {firstItem && (
-          <img src={firstItem.image} alt="" className="w-12 h-12 rounded-full object-cover shrink-0" />
+          <OptimizedImage src={firstItem.image} alt="" className="w-12 h-12 rounded-full object-cover shrink-0" />
         )}
         <div className="min-w-0">
           <p className="text-sm font-medium text-gray-800 truncate">
@@ -26,6 +28,7 @@ export function ReadyOrderRow({ order }: { order: KitchenOrder }) {
       </div>
 
       <div className="text-right shrink-0">
+        <OrderPrintButton orderId={order.id} kind="kitchen" />
         <div className="flex items-center justify-end gap-1 text-gray-400 text-xs">
           <Clock className="w-3.5 h-3.5" /> รอ
         </div>

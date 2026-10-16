@@ -1,18 +1,18 @@
 /** รูปที่ generate ตามสไตล์ PDF — อยู่ใน public/images */
 export const images = {
-  logoMascot: "/images/logo-mascot.png",
-  bgWatermark: "/images/bg-watermark.png",
+  logoMascot: "/images/logo-mascot.webp",
+  bgWatermark: "/images/bg-watermark.webp",
   food: {
-    bualoy: "/images/food-bualoy.png",
-    chaokuay: "/images/food-chaokuay.png",
-    tubtim: "/images/food-tubtim.png",
-    soymilk: "/images/food-soymilk.png",
-    dessert: "/images/food-dessert.png",
+    bualoy: "/images/food-bualoy.webp",
+    chaokuay: "/images/food-chaokuay.webp",
+    tubtim: "/images/food-tubtim.webp",
+    soymilk: "/images/food-soymilk.webp",
+    dessert: "/images/food-dessert.webp",
   },
   topping: {
-    redbean: "/images/topping-redbean.png",
-    foithong: "/images/topping-foithong.png",
-    coconut: "/images/topping-coconut.png",
+    redbean: "/images/topping-redbean.webp",
+    foithong: "/images/topping-foithong.webp",
+    coconut: "/images/topping-coconut.webp",
   },
 } as const;
 

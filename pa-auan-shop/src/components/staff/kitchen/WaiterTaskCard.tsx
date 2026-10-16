@@ -1,3 +1,5 @@
+import { OptimizedImage } from '../../OptimizedImage';
+import { OrderPrintButton } from '../../OrderPrintButton';
 /** การ์ดงาน waiter: แสดงโต๊ะ รายการ เวลารอ และปุ่มยืนยันเสิร์ฟแล้ว */
 import { AlertCircle } from "lucide-react";
 import type { KitchenOrder } from "../../../context/KitchenOrdersContext";
@@ -21,7 +23,7 @@ export function WaiterTaskCard({ order, onServe, busy = false }: WaiterTaskCardP
 
         <div className="flex items-center gap-3 flex-1 min-w-[180px]">
           {firstItem && (
-            <img src={firstItem.image} alt="" className="w-14 h-14 rounded-full object-cover shrink-0" />
+            <OptimizedImage src={firstItem.image} alt="" className="w-14 h-14 rounded-full object-cover shrink-0" />
           )}
           <div className="min-w-0">
             <p className="text-sm font-medium text-gray-800">
@@ -37,6 +39,7 @@ export function WaiterTaskCard({ order, onServe, busy = false }: WaiterTaskCardP
           <p className="text-xl font-bold text-green-600 leading-tight">{order.stepStartedMinutesAgo} นาที</p>
         </div>
 
+        <OrderPrintButton orderId={order.id} />
         <button
           type="button"
           onClick={() => void onServe(order.id)}

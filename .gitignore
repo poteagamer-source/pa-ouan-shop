@@ -1,0 +1,9 @@
+node_modules/
+dist/
+invoice-build/
+monthly-sales-build/
+receipt-label-build/
+performance-baseline/
+performance-after/
+test-results/
+playwright-report/

@@ -1,3 +1,5 @@
+import { OptimizedImage } from '../../components/OptimizedImage';
+import { OrderPrintButton } from '../../components/OrderPrintButton';
 /** รายการสั่งซื้อที่ชำระสำเร็จจาก API พร้อมรายละเอียดด้านข้างและ realtime refresh */
 import { useEffect, useMemo, useState } from "react";
 import { Banknote, CheckCircle, ChevronRight, FileText, Loader2, Package } from "lucide-react";
@@ -10,12 +12,13 @@ import type { SalesOrder } from "../../types";
 export function PurchaseOrdersPage() {
   const [orders, setOrders] = useState<SalesOrder[]>([]);
   const [selectedId, setSelectedId] = useState<string>();
+  const [printOrderId, setPrintOrderId] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const load = () => fetchSales()
-      .then((data) => { setOrders(data); setSelectedId(data[0]?.id); })
+      .then((data) => { setOrders(data); setSelectedId(current => data.some(order => order.id === current) ? current : data[0]?.id); })
       .catch((err) => setError(err instanceof Error ? err.message : "โหลดรายการสั่งซื้อไม่สำเร็จ"))
       .finally(() => setLoading(false));
     void load();
@@ -33,6 +36,13 @@ export function PurchaseOrdersPage() {
   return (
     <div className="max-w-6xl">
       <PageHeader title="รายการสั่งซื้อ" subtitle="ตรวจสอบออเดอร์และการชำระเงินจากระบบจริง" />
+      <div className="mb-4 rounded-xl border border-gray-200 bg-white p-4">
+        <label htmlFor="print-order-id" className="block text-sm font-medium mb-2">พิมพ์ย้อนหลังด้วยเลขออเดอร์ (รวมรายการคืนเงิน)</label>
+        <div className="flex flex-wrap items-center gap-2">
+          <input id="print-order-id" value={printOrderId} onChange={event => setPrintOrderId(event.target.value)} placeholder="เลขออเดอร์" className="rounded border px-3 py-2 text-sm" />
+          {printOrderId.trim() && <OrderPrintButton key={printOrderId.trim()} orderId={printOrderId.trim()} />}
+        </div>
+      </div>
 
       <div className="mb-6 flex flex-wrap gap-4">
         <StatCard icon={<Package className="h-5 w-5" />} iconBgClass="bg-brand-light" iconColorClass="text-brand" label="ออเดอร์ที่ชำระแล้ว" value={String(orders.length)} sublabel="รายการ" highlighted />
@@ -58,9 +68,10 @@ export function PurchaseOrdersPage() {
         </div>
 
         {selected && <div className="h-fit space-y-4 rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
+          <div className="flex flex-wrap gap-2"><OrderPrintButton key={`receipt:${selected.id}`} orderId={selected.id} /><OrderPrintButton key={`kitchen:${selected.id}`} orderId={selected.id} kind="kitchen" /></div>
           <div><p className="font-semibold text-brand">โต๊ะ: {selected.table}</p><p className="text-xs text-gray-400">{selected.id}</p><p className="text-xs text-gray-500">{selected.date} {selected.time}</p></div>
           <div className="rounded-xl bg-green-50 p-3 text-sm text-green-700"><CheckCircle className="mr-1 inline h-4 w-4" /> ยืนยันการชำระเงินแล้ว</div>
-          <div><p className="mb-2 text-sm font-semibold text-gray-700">รายการสินค้า</p><div className="space-y-2">{selected.items.map((item, index) => <div key={`${item.name}-${index}`} className="flex items-center gap-3"><div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-lg bg-gray-100">{item.image ? <img src={item.image} alt={item.name} className="h-full w-full object-cover" /> : <FileText className="h-4 w-4 text-gray-300" />}</div><div className="flex-1"><p className="text-sm text-gray-700">{item.name}</p><p className="text-xs text-gray-400">จำนวน {item.qty}</p></div><p className="text-sm font-semibold">{money(item.price, selected.currency)}</p></div>)}</div>
+          <div><p className="mb-2 text-sm font-semibold text-gray-700">รายการสินค้า</p><div className="space-y-2">{selected.items.map((item, index) => <div key={`${item.name}-${index}`} className="flex items-center gap-3"><div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-lg bg-gray-100">{item.image ? <OptimizedImage src={item.image} alt={item.name} className="h-full w-full object-cover" /> : <FileText className="h-4 w-4 text-gray-300" />}</div><div className="flex-1"><p className="text-sm text-gray-700">{item.name}</p><p className="text-xs text-gray-400">จำนวน {item.qty}</p></div><p className="text-sm font-semibold">{money(item.price, selected.currency)}</p></div>)}</div>
             <div className="mt-3 flex justify-between border-t pt-3 text-sm font-bold"><span>รวมทั้งหมด</span><span className="text-brand">{money(selected.total, selected.currency)}</span></div>
           </div>
         </div>}

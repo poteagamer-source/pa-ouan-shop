@@ -6,7 +6,11 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && node ./node_modules/vite/bin/vite.js build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "images:optimize": "node scripts/optimize-images.mjs",
+    "test:performance": "playwright test tests/performance.spec.ts",
+    "test:printing": "playwright test tests/printing.spec.ts",
+    "test:sales": "playwright test tests/sales.spec.ts"
   },
   "dependencies": {
     "lucide-react": "^0.511.0",
@@ -16,10 +20,12 @@
     "recharts": "^2.15.3"
   },
   "devDependencies": {
+    "@playwright/test": "^1.64.1",
     "@tailwindcss/vite": "^4.1.8",
     "@types/react": "^19.1.6",
     "@types/react-dom": "^19.1.5",
     "@vitejs/plugin-react": "^4.5.0",
+    "sharp": "^0.35.5",
     "tailwindcss": "^4.1.8",
     "typescript": "~5.8.3",
     "vite": "^6.3.5"

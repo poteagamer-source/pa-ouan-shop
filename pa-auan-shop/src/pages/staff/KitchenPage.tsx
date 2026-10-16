@@ -1,3 +1,4 @@
+import { OptimizedImage } from '../../components/OptimizedImage';
 /** หน้า legacy ตัวอย่างครัว ไม่ได้ถูก route หลักใช้; หน้าจริงอยู่ pages/staff/kitchen */
 import { Check } from "lucide-react";
 import { images } from "../../data/images";
@@ -38,7 +39,7 @@ function OrderCard({
       <p className="text-xs text-gray-500 mb-3">{order.datetime}</p>
       {order.items.map((item) => (
         <div key={item.name} className="flex gap-2 text-sm mb-2">
-          <img src={item.image} alt="" className="w-10 h-10 rounded-full object-cover" />
+          <OptimizedImage src={item.image} alt="" className="w-10 h-10 rounded-full object-cover" />
           <span className="flex-1">
             {item.name} {item.qty} $ {item.price} บาท
           </span>

@@ -16,7 +16,12 @@ const STAFF_TRANSITIONS = { queued: "cooking", cooking: "ready", ready: "served"
  * รวมหัวออเดอร์, payment ล่าสุด, รายการอาหาร และท็อปปิ้งเป็น JSON ในครั้งเดียว
  * whereSql ต้องสร้างจาก placeholder เท่านั้น ห้ามนำข้อความจากผู้ใช้มาต่อ SQL โดยตรง
  */
-async function fetchOrders(whereSql = "", params = []) {
+async function fetchOrders(whereSql = "", params = [], pagination = null) {
+  let selection = `SELECT o.id FROM orders o ${whereSql} ORDER BY o.created_at DESC, o.id DESC`;
+  if (pagination) {
+    params = [...params, pagination.limit, pagination.offset];
+    selection += ` LIMIT $${params.length - 1} OFFSET $${params.length}`;
+  }
   const { rows } = await query(
     `SELECT
         o.*,
@@ -60,9 +65,9 @@ async function fetchOrders(whereSql = "", params = []) {
         FROM order_item_toppings t
         WHERE t.order_item_id = oi.id
      ) oit ON true
-     ${whereSql}
+     ${pagination ? `WHERE o.id IN (${selection})` : whereSql}
      GROUP BY o.id
-     ORDER BY o.created_at DESC`,
+     ORDER BY o.created_at DESC, o.id DESC`,
     params
   );
 
@@ -129,6 +134,30 @@ router.get("/", requireRole("manager", "kitchen", "waiter"), async (req, res, ne
   } catch (err) {
     next(err);
   }
+});
+
+// Return bounded history details plus aggregates over ALL served orders.
+router.get("/served-history", requireRole("manager", "kitchen", "waiter"), async (req, res, next) => {
+  try {
+    const page = Number(req.query.page ?? 0);
+    if (!Number.isSafeInteger(page) || page < 0 || page > 1000000) {
+      return res.status(400).json({ error: "Invalid history page" });
+    }
+    const limit = 50;
+    const where = "WHERE o.payment_status = 'succeeded' AND o.fulfillment_status = 'served'";
+    const [items, summary, recent] = await Promise.all([
+      fetchOrders(where, [], { limit, offset: page * limit }),
+      query(`SELECT floor(extract(hour FROM o.order_time) / 4)::int AS bucket, count(*)::int AS count
+             FROM orders o ${where} GROUP BY bucket ORDER BY count DESC, bucket`),
+      page > 0 ? fetchOrders(where, [], { limit: 4, offset: 0 }) : Promise.resolve(null),
+    ]);
+    res.json({ items, recent: recent ?? items.slice(0, 4), page, pageSize: limit,
+      total: summary.rows.reduce((sum, row) => sum + row.count, 0),
+      peakTimes: summary.rows.slice(0, 2).map((row) => [
+        `${String(row.bucket * 4).padStart(2, '0')}:00 - ${String(row.bucket * 4 + 4).padStart(2, '0')}:00`, row.count,
+      ]),
+    });
+  } catch (err) { next(err); }
 });
 
 // GET /api/orders/:id — อ่านออเดอร์เดียว (ลูกค้าใช้ติดตามสถานะได้)

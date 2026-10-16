@@ -1,48 +1,18 @@
 /** หน้าเมนูลูกค้า: โหลดสินค้าที่เปิดขาย กรองตามหมวด/แนะนำ/ขายดี และรับ realtime */
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import { CategoryChips } from "../../components/customer/CategoryChips";
 import { CustomerPageLayout } from "../../components/customer/CustomerPageLayout";
 import { ProductCard } from "../../components/customer/ProductCard";
-import { fetchProducts, subscribeToUpdates } from "../../lib/api";
+import { useMenuProducts } from "../../hooks/useMenuProducts";
 import { useCategories } from "../../context/CategoriesContext";
 import { useMenuBrowse } from "../../context/MenuBrowseContext";
-import type { Product } from "../../types";
 import { useLanguage } from "../../context/LanguageContext";
 
 export function HomePage() {
   const { viewMode, category, setCategory } = useMenuBrowse();
   const { categories } = useCategories();
-  const [products, setProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { products, loading, error } = useMenuProducts();
   const { t } = useLanguage();
-
-  useEffect(() => {
-    let active = true;
-    const load = (showLoading = false) => {
-      if (showLoading) setLoading(true);
-      fetchProducts({ active: true })
-        .then((data) => {
-          if (active) setProducts(data);
-        })
-        .catch((err) => console.error("โหลดสินค้าไม่สำเร็จ:", err))
-        .finally(() => {
-          if (active) setLoading(false);
-        });
-    };
-    load(true);
-    const unsubscribe = subscribeToUpdates((update) => {
-      if (update.resource === "products") load();
-    });
-    const fallback = window.setInterval(() => load(), 15000);
-    const refreshOnFocus = () => load();
-    window.addEventListener("focus", refreshOnFocus);
-    return () => {
-      active = false;
-      unsubscribe();
-      window.clearInterval(fallback);
-      window.removeEventListener("focus", refreshOnFocus);
-    };
-  }, []);
 
   const filtered = useMemo(() => {
     if (viewMode === "bestseller") {
@@ -75,13 +45,14 @@ export function HomePage() {
       )}
       <section className="px-4 py-3">
         <h2 className="text-sm font-semibold text-gray-800 mb-3">{sectionTitle}</h2>
+        {error && <p role="alert" className="text-center text-sm text-red-600 py-2">{error}</p>}
         {loading ? (
           <p className="text-center text-sm text-gray-400 py-8">{t("กำลังโหลดเมนู...", "Loading menu...")}</p>
         ) : (
           <>
             <div className="grid grid-cols-3 gap-2">
-              {filtered.map((p) => (
-                <ProductCard key={p.id} product={p} />
+              {filtered.map((p, index) => (
+                <ProductCard key={p.id} product={p} priority={index < 3} />
               ))}
             </div>
             {filtered.length === 0 && (

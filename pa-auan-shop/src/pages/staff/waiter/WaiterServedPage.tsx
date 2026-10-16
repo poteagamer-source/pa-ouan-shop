@@ -1,11 +1,13 @@
+import { HistoryPagination } from "../../../components/staff/kitchen/HistoryPagination";
+import { OptimizedImage } from '../../../components/OptimizedImage';
+import { OrderPrintButton } from '../../../components/OrderPrintButton';
 /** ประวัติ waiter: ตารางออเดอร์ที่เสิร์ฟแล้ว กราฟสัดส่วน และช่วงเวลาพีค */
-import { useMemo } from "react";
 import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
 import { PageHeader } from "../../../components/staff/PageHeader";
 import { useKitchenOrders } from "../../../context/KitchenOrdersContext";
 
 export function WaiterServedPage() {
-  const { counts, byStatus } = useKitchenOrders();
+  const { counts, byStatus, peakTimes } = useKitchenOrders();
   const servedOrders = byStatus("served");
   const totalOrders = counts.new + counts.cooking + counts.ready + counts.served;
   const servedPct = totalOrders === 0 ? 0 : Math.round((counts.served / totalOrders) * 100);
@@ -15,19 +17,6 @@ export function WaiterServedPage() {
     { name: "ยังไม่เสิร์ฟ", value: totalOrders - counts.served },
   ];
 
-  const peakTimes = useMemo(() => {
-    const buckets = new Map<string, number>();
-    servedOrders.forEach((order) => {
-      const hour = Number(order.time.split(":")[0]);
-      const bucketStart = Math.floor(hour / 4) * 4;
-      const label = `${String(bucketStart).padStart(2, "0")}:00 - ${String(bucketStart + 4).padStart(2, "0")}:00`;
-      buckets.set(label, (buckets.get(label) ?? 0) + 1);
-    });
-    return Array.from(buckets.entries())
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 2);
-  }, [servedOrders]);
-
   return (
     <div className="max-w-6xl">
       <PageHeader title="พนักงานเสิร์ฟ" subtitle="รายการอาหารที่เสิร์ฟแล้ว" />
@@ -35,7 +24,7 @@ export function WaiterServedPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <div className="lg:col-span-2 rounded-2xl bg-white border border-gray-100 shadow-sm p-4">
           <div className="flex items-center justify-between mb-3">
-            <p className="text-sm font-semibold text-gray-700">รายการเสิร์ฟแล้ว ({servedOrders.length})</p>
+            <p className="text-sm font-semibold text-gray-700">รายการเสิร์ฟแล้ว ({counts.served})</p>
           </div>
           <div className="overflow-x-auto"><table className="min-w-[640px] w-full text-xs">
             <thead>
@@ -53,13 +42,14 @@ export function WaiterServedPage() {
                 <tr key={order.id} className="border-b border-gray-50 last:border-0 align-top">
                   <td className="py-3">
                     <p className="text-gray-800 font-medium">{order.id}</p>
+                    <OrderPrintButton orderId={order.id} />
                     <p className="text-[11px] text-gray-400">{order.time} น.</p>
                   </td>
                   <td className="py-3 text-gray-700">{order.table}</td>
                   <td className="py-3">
                     <div className="flex items-center gap-2">
                       {order.items[0] && (
-                        <img
+                        <OptimizedImage
                           src={order.items[0].image}
                           alt=""
                           className="w-8 h-8 rounded-full object-cover shrink-0"
@@ -75,6 +65,7 @@ export function WaiterServedPage() {
               ))}
             </tbody>
           </table></div>
+          <HistoryPagination />
         </div>
 
         <div className="space-y-4">

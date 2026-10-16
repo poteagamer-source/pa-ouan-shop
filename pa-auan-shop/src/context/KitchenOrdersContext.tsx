@@ -1,3 +1,5 @@
+import { useLocation } from "react-router-dom";
+import { useStaffAuth } from "./StaffAuthContext";
 /** ศูนย์กลางออเดอร์ครัว/waiter: fetch, realtime, polling, mapping status และคำสั่งเลื่อนขั้นตอน */
 import {
   createContext,
@@ -9,7 +11,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { fetchOrders, subscribeToUpdates, updateOrderStatus } from "../lib/api";
+import { fetchOrders, fetchServedHistory, subscribeToUpdates, updateOrderStatus } from "../lib/api";
 import type { FulfillmentStatus, Order } from "../types";
 import type { KitchenOrderStatus } from "../config/constants";
 
@@ -34,6 +36,7 @@ export interface KitchenOrder {
   status: KitchenOrderStatus;
   stepStartedMinutesAgo: number;
   servedAt?: string | null;
+  stepStartedAt?: string | null;
 }
 
 /** ฝั่งครัวเรียก fulfillment status "queued" ว่า "new" */
@@ -82,6 +85,7 @@ function orderToKitchenOrder(order: Order): KitchenOrder {
     status: API_TO_UI_STATUS[order.fulfillmentStatus] ?? "new",
     stepStartedMinutesAgo: minutesAgoFromTime(order.time?.slice(0, 5) ?? order.time, order.stepStartedAt),
     servedAt: order.servedAt,
+    stepStartedAt: order.stepStartedAt,
   };
 }
 
@@ -96,6 +100,12 @@ const POLL_INTERVAL_MS = 5000;
 const ACTIVE_STATUSES: FulfillmentStatus[] = ["queued", "cooking", "ready"];
 
 interface KitchenOrdersContextValue {
+  recentServed: KitchenOrder[];
+  historyPage: number;
+  historyTotal: number;
+  historyLoading: boolean;
+  setHistoryPage: (page: number) => void;
+  peakTimes: [string, number][];
   orders: KitchenOrder[];
   counts: Record<KitchenOrderStatus, number>;
   byStatus: (status: KitchenOrderStatus) => KitchenOrder[];
@@ -113,37 +123,88 @@ export function KitchenOrdersProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [pendingOrderIds, setPendingOrderIds] = useState<Set<string>>(new Set());
-  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const { user } = useStaffAuth();
+  const { pathname } = useLocation();
+  const [historyPage, setHistoryPage] = useState(0);
+  const [historyTotal, setHistoryTotal] = useState(0);
+  const [recentServed, setRecentServed] = useState<KitchenOrder[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [peakTimes, setPeakTimes] = useState<[string, number][]>([]);
+  const reloadRef = useRef<() => Promise<void>>(async () => {});
+  const loadOrders = useCallback(() => reloadRef.current(), []);
 
-  const loadOrders = useCallback(async () => {
-    try {
-      const [active, servedOrders] = await Promise.all([
-        fetchOrders({ paymentStatus: ["succeeded"], fulfillmentStatus: ACTIVE_STATUSES }),
-        // ประวัติต้องอิงสถานะ served จากฐานข้อมูลโดยตรง ไม่กรองวันที่ใน browser
-        // เพราะ timezone และวันที่สั่งอาจต่างจากวันที่เสิร์ฟ ทำให้รายการที่เพิ่งเสิร์ฟหายได้
-        fetchOrders({ paymentStatus: ["succeeded"], fulfillmentStatus: ["served"] }),
-      ]);
-      setOrders([...active, ...servedOrders].map(orderToKitchenOrder));
-      setError(null);
-    } catch (err) {
-      console.error("โหลดออเดอร์ห้องครัวไม่สำเร็จ:", err);
-      setError(err instanceof Error ? err.message : "โหลดออเดอร์ไม่สำเร็จ");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  useEffect(() => { setHistoryPage(0); }, [pathname]);
 
   useEffect(() => {
-    loadOrders();
-    pollRef.current = setInterval(loadOrders, POLL_INTERVAL_MS);
-    const unsubscribe = subscribeToUpdates((update) => {
-      if (update.resource === "orders") void loadOrders();
-    });
+    if (!user) return;
+    let disposed = false;
+    let connected = false;
+    let lastSuccess = 0;
+    let running: Promise<void> | null = null;
+    let dirty = false;
+    const load = (): Promise<void> => {
+      if (disposed) return Promise.resolve();
+      if (running) { dirty = true; return running; }
+      setHistoryLoading(true);
+      running = (async () => {
+        do {
+          dirty = false;
+          try {
+            const [active, history] = await Promise.all([
+              fetchOrders({ paymentStatus: ["succeeded"], fulfillmentStatus: ACTIVE_STATUSES }),
+              fetchServedHistory(historyPage),
+            ]);
+            if (disposed) return;
+            if (historyPage > 0 && history.items.length === 0) {
+              setHistoryPage(Math.max(0, Math.ceil(history.total / history.pageSize) - 1));
+              return;
+            }
+            setOrders([...active, ...history.items].map(orderToKitchenOrder));
+            setHistoryTotal(history.total);
+            setRecentServed(history.recent.map(orderToKitchenOrder));
+            setPeakTimes(history.peakTimes);
+            setError(null);
+            lastSuccess = Date.now();
+          } catch (err) {
+            if (!disposed) setError(err instanceof Error ? err.message : "โหลดออเดอร์ไม่สำเร็จ");
+          }
+        } while (dirty && !disposed);
+      })().finally(() => {
+        running = null;
+        if (!disposed) { setLoading(false); setHistoryLoading(false); }
+      });
+      return running;
+    };
+    reloadRef.current = load;
+    void load();
+    const unsubscribe = subscribeToUpdates(
+      (update) => { if (update.resource === "orders") void load(); },
+      (value) => {
+        const reconnected = value && !connected;
+        connected = value;
+        if (reconnected) void load();
+      },
+    );
+    // Periodic reconciliation also recovers events lost during reconnects.
+    const poll = setInterval(() => {
+      if (document.visibilityState === "hidden") return;
+      if (!connected || Date.now() - lastSuccess >= 60000) void load();
+    }, POLL_INTERVAL_MS);
+    const onVisible = () => { if (document.visibilityState !== "hidden") void load(); };
+    document.addEventListener("visibilitychange", onVisible);
+    const clock = setInterval(() => {
+      setOrders(current => current.map(order => ({ ...order,
+        stepStartedMinutesAgo: minutesAgoFromTime(order.time, order.stepStartedAt),
+      })));
+    }, 30000);
     return () => {
-      if (pollRef.current) clearInterval(pollRef.current);
+      disposed = true;
+      clearInterval(poll);
+      clearInterval(clock);
+      document.removeEventListener("visibilitychange", onVisible);
       unsubscribe();
     };
-  }, [loadOrders]);
+  }, [historyPage, user]);
 
   const advance = useCallback(
     async (id: string) => {
@@ -155,6 +216,7 @@ export function KitchenOrdersProvider({ children }: { children: ReactNode }) {
       try {
         const updated = await updateOrderStatus(id, UI_TO_API_STATUS[next]);
         setOrders((current) => current.map((item) => item.id === id ? orderToKitchenOrder(updated) : item));
+        await loadOrders();
         return true;
       } catch (err) {
         console.error("อัปเดตสถานะออเดอร์ไม่สำเร็จ:", err);
@@ -177,15 +239,16 @@ export function KitchenOrdersProvider({ children }: { children: ReactNode }) {
     orders.forEach((order) => {
       result[order.status] += 1;
     });
+    result.served = historyTotal;
     return result;
-  }, [orders]);
+  }, [orders, historyTotal]);
 
   const byStatus = useCallback(
     (status: KitchenOrderStatus) => orders.filter((order) => order.status === status),
     [orders],
   );
 
-  const value: KitchenOrdersContextValue = { orders, counts, byStatus, advance, pendingOrderIds, loading, error };
+  const value: KitchenOrdersContextValue = { recentServed, historyPage, historyTotal, historyLoading, setHistoryPage, peakTimes, orders, counts, byStatus, advance, pendingOrderIds, loading, error };
 
   return <KitchenOrdersContext.Provider value={value}>{children}</KitchenOrdersContext.Provider>;
 }

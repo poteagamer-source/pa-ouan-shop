@@ -1,3 +1,5 @@
+import { OptimizedImage } from '../../OptimizedImage';
+import { OrderPrintButton } from '../../OrderPrintButton';
 /** การ์ดออเดอร์เข้าใหม่ (queued) พร้อมรายละเอียดและปุ่มเริ่มทำอาหาร */
 import { ChefHat, ChevronRight } from "lucide-react";
 import type { KitchenOrder } from "../../../context/KitchenOrdersContext";
@@ -39,7 +41,7 @@ export function NewOrderCard({ order, onAdvance, busy = false }: NewOrderCardPro
       <div className="space-y-2 mb-4">
         {order.items.map((item) => (
           <div key={item.id} className="flex items-center gap-3 text-sm">
-            <img src={item.image} alt="" className="w-10 h-10 rounded-full object-cover shrink-0" />
+            <OptimizedImage src={item.image} alt="" className="w-10 h-10 rounded-full object-cover shrink-0" />
             <span className="flex-1 text-gray-700">{item.name}</span>
             <span className="text-gray-400 w-6 text-center">{item.qty}</span>
             <span className="font-semibold text-gray-800 w-20 text-right">฿ {item.price.toFixed(2)}</span>
@@ -52,6 +54,7 @@ export function NewOrderCard({ order, onAdvance, busy = false }: NewOrderCardPro
         <p className="font-bold text-gray-800">฿ {order.total.toFixed(2)}</p>
       </div>
 
+      <div className="mb-3"><OrderPrintButton orderId={order.id} kind="kitchen" /></div>
       <button
         type="button"
         onClick={() => void onAdvance(order.id)}

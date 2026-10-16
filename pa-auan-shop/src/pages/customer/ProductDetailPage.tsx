@@ -1,3 +1,4 @@
+import { OptimizedImage } from '../../components/OptimizedImage';
 /** หน้าปรับแต่งเมนู: จำนวน อุณหภูมิ ท็อปปิ้ง และเพิ่ม snapshot ลงตะกร้า */
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
@@ -96,7 +97,7 @@ export function ProductDetailPage() {
     <CustomerPageLayout showPager={false}>
       <div className="px-4 py-4 space-y-4 pb-4">
         <div className="flex gap-4 items-start">
-          <img
+          <OptimizedImage
             src={product.image}
             alt={product.name}
             className="w-24 h-24 rounded-full object-cover border-4 border-white shadow-md"
@@ -210,7 +211,7 @@ function ToppingSection({
               className={`shrink-0 w-20 text-center ${isOn ? "opacity-100" : "opacity-80"}`}
             >
               <div className="relative">
-                <img src={topping.image} alt={t(topping.name)} className="w-16 h-16 rounded-lg object-cover mx-auto" />
+                <OptimizedImage src={topping.image} alt={t(topping.name)} className="w-16 h-16 rounded-lg object-cover mx-auto" />
                 <span className="absolute bottom-0 right-0 flex h-5 w-5 items-center justify-center rounded-full bg-brand text-white text-xs">
                   +
                 </span>

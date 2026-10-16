@@ -36,7 +36,7 @@ export function WelcomePage() {
 
         <Link
           to={paths.menu}
-          className="rounded-full bg-accent-blue px-10 py-3 text-sm font-semibold text-gray-800 shadow-md mb-10 hover:brightness-95 transition"
+          className="rounded-full bg-accent-orange px-10 py-3 text-sm font-semibold text-gray-800 shadow-md mb-10 hover:brightness-95 transition"
         >
           สั่งอาหาร
         </Link>
@@ -46,22 +46,20 @@ export function WelcomePage() {
             onScroll={handleScroll}
             className="flex gap-3 overflow-x-auto snap-x snap-mandatory pb-2 no-scrollbar"
           >
-            {carouselImages.map((src, i) => (
+            {carouselImages.map((src, index) => (
               <img
-                key={i}
+                key={src}
                 src={src}
-                alt=""
-                className="w-28 h-28 rounded-xl object-cover shrink-0 snap-center shadow-sm"
+                alt={`เมนูแนะนำ ${index + 1}`}
+                className="w-full shrink-0 snap-center rounded-2xl object-cover aspect-[16/9]"
               />
             ))}
           </div>
-          <div className="flex justify-center gap-1.5 mt-3">
-            {carouselImages.map((_, i) => (
+          <div className="mt-3 flex justify-center gap-2" aria-label="สไลด์เมนูแนะนำ">
+            {carouselImages.map((src, index) => (
               <span
-                key={i}
-                className={`w-2 h-2 rounded-full transition-colors ${
-                  i === slide ? "bg-gray-900" : "bg-gray-300"
-                }`}
+                key={src}
+                className={`h-2 w-2 rounded-full ${slide === index ? "bg-accent-orange" : "bg-gray-300"}`}
               />
             ))}
           </div>

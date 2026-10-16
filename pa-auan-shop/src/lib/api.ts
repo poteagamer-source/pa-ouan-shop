@@ -40,17 +40,7 @@ export const resolveTableQrCode = (token: string): Promise<{ tableId: string }> 
  * event ไม่มีข้อมูลเต็ม หน้าแต่ละหน้าต้อง fetch ข้อมูลล่าสุดใหม่เอง
  * ค่าที่คืนมาคือ cleanup function ซึ่ง useEffect ต้องเรียกตอน unmount
  */
-export function subscribeToUpdates(onUpdate: (update: RealtimeUpdate) => void): () => void {
-  const source = new EventSource(`${BASE_URL}/events`, { withCredentials: true });
-  source.addEventListener("update", (event) => {
-    try {
-      onUpdate(JSON.parse((event as MessageEvent<string>).data) as RealtimeUpdate);
-    } catch {
-      // Ignore malformed events and keep the stream connected.
-    }
-  });
-  return () => source.close();
-}
+export { subscribeToUpdates } from "./realtime";
 
 /** Error กลางที่เก็บ HTTP status เพื่อให้หน้า login/route guard แยก 401, 403 ฯลฯ ได้ */
 export class ApiError extends Error {
@@ -64,6 +54,7 @@ export class ApiError extends Error {
 // ฟังก์ชันกลางสำหรับเรียก API: แนบ cookie, แปลง JSON และจัดรูปแบบ error
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
   const res = await fetch(`${BASE_URL}${path}`, {
+    signal: AbortSignal.timeout(15000),
     credentials: "include",
     headers: { "Content-Type": "application/json" },
     ...options,
@@ -235,6 +226,12 @@ export function fetchOrders(params?: {
 
 export function fetchOrder(id: string): Promise<Order> {
   return request(`/orders/${id}`);
+}
+
+export function fetchServedHistory(page = 0): Promise<{
+  items: Order[]; recent: Order[]; total: number; page: number; pageSize: number; peakTimes: [string, number][];
+}> {
+  return request(`/orders/served-history?page=${page}`);
 }
 
 export interface CreateOrderPayload {

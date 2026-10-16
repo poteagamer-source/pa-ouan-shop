@@ -1,3 +1,4 @@
+import { OptimizedImage } from '../../components/OptimizedImage';
 /** CRUD เมนูและท็อปปิ้ง พร้อมราคา สถานะ สต๊อกย่อ และการค้นหา/แบ่งหน้า */
 import { useEffect, useMemo, useState, type FormEvent, type KeyboardEvent } from "react";
 import { Search, Plus, CheckCircle2, XCircle, Grid2x2, Package, Pencil, Trash2, X, TriangleAlert } from "lucide-react";
@@ -334,7 +335,7 @@ export function MenuManagement() {
                 {selectedCategory === "toppings" && filteredToppings.map((item, index) => (
                   <tr key={item.id} className="border-b border-gray-50 last:border-0">
                     <td className="py-3 text-gray-500">{index + 1}</td>
-                    <td className="py-3"><img src={item.image} alt={item.name} className="h-10 w-10 rounded-lg object-cover" /></td>
+                    <td className="py-3"><OptimizedImage src={item.image} alt={item.name} className="h-10 w-10 rounded-lg object-cover" /></td>
                     <td className="py-3 text-gray-700"><p>{item.name}</p><p className="text-xs text-gray-400">กลุ่ม {item.tier} บาท</p><p className={`text-xs font-medium ${item.stockQty <= 0 ? "text-red-500" : "text-green-600"}`}>{item.stockQty <= 0 ? "สต๊อกหมด" : `สต๊อก ${item.stockQty} ${item.unit}`}</p></td>
                     <td className="py-3"><input key={`${item.id}-${item.price}`} type="number" min="0" step="0.01" defaultValue={item.price.toFixed(2)} onBlur={(event) => void saveToppingPrice(item, event.currentTarget.value)} onKeyDown={(event) => { if (event.key === "Enter") { event.currentTarget.blur(); void saveToppingPrice(item, event.currentTarget.value); } }} className="w-24 rounded-full border border-gray-200 px-3 py-1.5 text-sm outline-none focus:border-brand" /><span className="ml-1 text-gray-400">บาท</span></td>
                     <td className="py-3"><button type="button" onClick={() => void toggleTopping(item)} aria-pressed={item.active} className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${item.active ? "bg-green-500" : "bg-gray-300"}`}><span className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${item.active ? "translate-x-6" : "translate-x-1"}`} /></button><span className="ml-2 text-xs text-gray-500">{item.active ? "เปิดขาย" : "ปิดขาย"}</span></td>
@@ -346,7 +347,7 @@ export function MenuManagement() {
                   return (
                     <tr key={product.id} className="border-b border-gray-50 last:border-0">
                       <td className="py-3 text-gray-500">{(safePage - 1) * PAGE_SIZE + index + 1}</td>
-                      <td className="py-3"><img src={product.image} alt={product.name} className="w-10 h-10 rounded-lg object-cover" /></td>
+                      <td className="py-3"><OptimizedImage src={product.image} alt={product.name} className="w-10 h-10 rounded-lg object-cover" /></td>
                       <td className="py-3 text-gray-700">{product.name}</td>
                       <td className="py-3">
                         <input key={`${product.id}-${product.price}`} type="number" min="0" step="0.01" defaultValue={product.price.toFixed(2)} onBlur={(event) => void saveInlinePrice(product, event.currentTarget.value)} onKeyDown={(event) => handlePriceKey(event, product)} className="w-24 rounded-full border border-gray-200 px-3 py-1.5 text-sm outline-none focus:border-brand" />
