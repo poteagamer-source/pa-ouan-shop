@@ -5,6 +5,8 @@ import { publishUpdate } from "../realtime.js";
 import { requireRole } from "../auth.js";
 
 const router = Router();
+// Rank the full catalog before category/stock filters: at most two products are new.
+const NEW_PRODUCT = "products.id IN (SELECT id FROM products ORDER BY created_at DESC, id DESC LIMIT 2)";
 
 const mapProduct = (r) => ({
   id: r.id,
@@ -15,6 +17,8 @@ const mapProduct = (r) => ({
   bestseller: r.bestseller,
   recommended: r.recommended,
   active: r.active,
+  createdAt: r.created_at,
+  isNew: Boolean(r.is_new),
 });
 
 // GET /api/products?category=bualoy&active=true
@@ -36,7 +40,7 @@ router.get("/", async (req, res, next) => {
 
     const where = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "";
     const { rows } = await query(
-      `SELECT * FROM products ${where} ORDER BY category_id, id`,
+      `SELECT *, ${NEW_PRODUCT} AS is_new FROM products ${where} ORDER BY category_id, id`,
       params
     );
     res.json(rows.map(mapProduct));
@@ -48,7 +52,7 @@ router.get("/", async (req, res, next) => {
 // GET /api/products/:id
 router.get("/:id", async (req, res, next) => {
   try {
-    const { rows } = await query("SELECT * FROM products WHERE id = $1", [req.params.id]);
+    const { rows } = await query(`SELECT *, ${NEW_PRODUCT} AS is_new FROM products WHERE id = $1`, [req.params.id]);
     if (!rows[0]) return res.status(404).json({ error: "ไม่พบสินค้า" });
     res.json(mapProduct(rows[0]));
   } catch (err) {
@@ -76,7 +80,8 @@ router.post("/", requireRole("manager"), async (req, res, next) => {
       [productId]
     );
     publishUpdate("products", "created", productId);
-    res.status(201).json(mapProduct(rows[0]));
+    const latest = await query(`SELECT *, ${NEW_PRODUCT} AS is_new FROM products WHERE id = $1`, [rows[0].id]);
+    res.status(201).json(mapProduct(latest.rows[0]));
   } catch (err) {
     if (err.code === "23505") return res.status(409).json({ error: "มีรหัสสินค้านี้อยู่แล้ว" });
     next(err);
@@ -96,7 +101,7 @@ router.put("/:id", requireRole("manager"), async (req, res, next) => {
          bestseller = COALESCE($6, bestseller),
          recommended = COALESCE($7, recommended),
          active = COALESCE($8, active)
-       WHERE id = $1 RETURNING *`,
+       WHERE id = $1 RETURNING *, ${NEW_PRODUCT} AS is_new`,
       [req.params.id, name, price, category, image, bestseller, recommended, active]
     );
     if (!rows[0]) return res.status(404).json({ error: "ไม่พบสินค้า" });

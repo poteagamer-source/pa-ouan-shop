@@ -1,7 +1,7 @@
 /** เมนูล่างมือถือ: หน้าหลัก แนะนำ ปุ่มเพิ่ม และขายดี พร้อมรักษา path เลขโต๊ะ */
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import type { ReactNode } from "react";
-import { Home, Heart, Plus, Sparkles } from "lucide-react";
+import { Home, Heart, Plus, Sparkles, BadgePlus } from "lucide-react";
 import { useCart } from "../../context/CartContext";
 import { useMenuBrowse } from "../../context/MenuBrowseContext";
 import { useCustomerPath } from "../../hooks/useCustomerPath";
@@ -18,7 +18,7 @@ export function CustomerBottomNav() {
   const isMenu = location.pathname.endsWith("/menu");
   const isHome = location.pathname === paths.home;
 
-  const goMenuWithMode = (mode: "category" | "recommended" | "bestseller") => {
+  const goMenuWithMode = (mode: "category" | "recommended" | "bestseller" | "new") => {
     setViewMode(mode);
     if (!isMenu) navigate(paths.menu);
   };
@@ -70,7 +70,9 @@ export function CustomerBottomNav() {
             />
           </NavIcon>
 
-          <div className="min-w-[52px]" aria-hidden />
+          <NavIcon label={t("เมนูใหม่", "New menu")} active={isMenu && viewMode === "new"} onClick={() => goMenuWithMode("new")}>
+            <BadgePlus className="w-5 h-5" strokeWidth={2} />
+          </NavIcon>
         </div>
 
         {/* ปุ่มกลางใช้เริ่มเลือกเมนูเพิ่ม ส่วนตะกร้าเปิดได้จากไอคอนด้านบน */}

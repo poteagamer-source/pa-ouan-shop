@@ -1,10 +1,5 @@
 /** ชนิดข้อมูลกลางของ frontend ให้ context, API และ component ใช้รูปแบบเดียวกัน */
-export type CategoryId =
-  | "bualoy"
-  | "chaokuay"
-  | "tubtim"
-  | "soymilk"
-  | "dessert";
+export type CategoryId = string;
 
 export interface Product {
   id: string;
@@ -15,6 +10,8 @@ export interface Product {
   bestseller?: boolean;
   recommended?: boolean;
   active?: boolean;
+  createdAt?: string;
+  isNew?: boolean;
 }
 
 export interface Topping {

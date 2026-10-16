@@ -19,6 +19,6 @@ export const images = {
 import type { CategoryId } from "../types";
 
 export function foodImageByCategory(category: CategoryId): string {
-  return images.food[category];
+  return (images.food as Record<string, string>)[category] ?? images.food.dessert;
 }
 /** registry path รูป static ที่ใช้ซ้ำ; ไฟล์จริงอยู่ใน public/images */

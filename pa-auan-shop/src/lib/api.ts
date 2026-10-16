@@ -116,6 +116,10 @@ function toQueryString(params: Record<string, string | number | boolean | undefi
 
 /* ------------------------------- categories ------------------------------ */
 
+export function createCategory(label: string): Promise<{ id: CategoryId; label: string }> {
+  return request('/categories', { method: 'POST', body: JSON.stringify({ label }) });
+}
+
 export function fetchCategories(): Promise<{ id: CategoryId; label: string }[]> {
   return request("/categories");
 }

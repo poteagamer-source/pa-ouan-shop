@@ -1,4 +1,5 @@
 import { OptimizedImage } from '../OptimizedImage';
+import { NewProductBadge } from './NewProductBadge';
 /** การ์ดสินค้าใน grid: รูป ชื่อแปลภาษา ราคา และลิงก์ไปหน้ารายละเอียด */
 import { Link } from "react-router-dom";
 import type { Product } from "../../types";
@@ -22,12 +23,15 @@ export function ProductCard({ product, selected, priority = false }: Props) {
         selected ? "border-accent-blue-dark ring-1 ring-accent-blue-dark/40" : "border-transparent"
       }`}
     >
+      <div className="relative">
       <OptimizedImage
         src={product.image}
         loading={priority ? "eager" : "lazy"}
         alt={t(product.name)}
         className="w-full aspect-square object-cover rounded-lg"
       />
+      {product.isNew && <div className="absolute left-1 top-1"><NewProductBadge /></div>}
+      </div>
       <p className="mt-1.5 text-xs text-center text-gray-800 line-clamp-2 min-h-[2rem]">
         {t(product.name)}
       </p>

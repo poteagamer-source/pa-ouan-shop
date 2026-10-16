@@ -1,10 +1,11 @@
 import { OptimizedImage } from '../../components/OptimizedImage';
+import { NewProductBadge } from '../../components/customer/NewProductBadge';
 /** หน้าปรับแต่งเมนู: จำนวน อุณหภูมิ ท็อปปิ้ง และเพิ่ม snapshot ลงตะกร้า */
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Minus, Plus } from "lucide-react";
 import { CustomerPageLayout } from "../../components/customer/CustomerPageLayout";
-import { fetchProduct, fetchToppings } from "../../lib/api";
+import { fetchProduct, fetchToppings, subscribeToUpdates } from "../../lib/api";
 import { useCart } from "../../context/CartContext";
 import { useCustomerPath } from "../../hooks/useCustomerPath";
 import type { Product, Topping } from "../../types";
@@ -45,8 +46,14 @@ export function ProductDetailPage() {
       .finally(() => {
         if (active) setLoading(false);
       });
+    const unsubscribe = subscribeToUpdates(event => {
+      if (event.resource === 'products') {
+        void fetchProduct(id).then(data => { if (active) setProduct(data); }).catch(() => {});
+      }
+    });
     return () => {
       active = false;
+      unsubscribe();
     };
   }, [id]);
 
@@ -103,6 +110,7 @@ export function ProductDetailPage() {
             className="w-24 h-24 rounded-full object-cover border-4 border-white shadow-md"
           />
           <div className="flex-1 text-sm space-y-1">
+            {product.isNew && <NewProductBadge />}
             <p>
               {t(product.name)} {qty} × ฿{product.price}
             </p>

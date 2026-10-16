@@ -8,6 +8,20 @@ const order = (id: string, status = 'served') => ({
     basePrice: 35, image: '/images/menu-bl1.png', toppings: [] }],
 });
 
+test.describe('Bangkok order clock', () => {
+  test.use({ timezoneId: 'America/Los_Angeles' });
+  test('shows a clean date and counts waiting time across Thai midnight', async ({ page }) => {
+    await setup(page);
+    await page.clock.install({ time: new Date('2026-10-16T17:10:00Z') });
+    await page.route('**/api/orders?**', route => route.fulfill({ json: [{
+      ...order('TIME-TEST', 'cooking'), date: '2026-10-16', time: '23:50:00', stepStartedAt: null,
+    }] }));
+    await page.goto('/staff/kitchen/cooking');
+    await expect(page.getByText('2026-10-16 : 23:50 น.', { exact: true })).toBeVisible();
+    await expect(page.getByText(/กำลังทำมาแล้ว/)).toHaveText(/กำลังทำมาแล้ว\s*20\s*นาที/);
+  });
+});
+
 async function setup(page: Page) {
   const errors: string[] = [];
   page.on('pageerror', error => errors.push(error.message));

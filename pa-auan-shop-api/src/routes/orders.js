@@ -4,6 +4,7 @@ import { pool, query } from "../db.js";
 import { decimalToMinor, minorToNumber, serializeMinor, shopCurrency } from "../payments/money.js";
 import { publishUpdate } from "../realtime.js";
 import { requireRole } from "../auth.js";
+import { orderDateTime } from "../order-time.js";
 
 const router = Router();
 const PAYMENT_STATUSES = ["pending", "processing", "succeeded", "failed", "cancelled", "partially_refunded", "refunded"];
@@ -74,8 +75,7 @@ async function fetchOrders(whereSql = "", params = [], pagination = null) {
   return rows.map((row) => ({
     id: row.id,
     table: row.table_name,
-    date: row.order_date,
-    time: row.order_time,
+    ...orderDateTime(row.created_at),
     paymentStatus: row.payment_status,
     fulfillmentStatus: row.fulfillment_status,
     currency: row.currency,
@@ -122,7 +122,7 @@ router.get("/", requireRole("manager", "kitchen", "waiter"), async (req, res, ne
     }
     if (date) {
       params.push(date);
-      conditions.push(`o.order_date = $${params.length}`);
+      conditions.push(`(o.created_at AT TIME ZONE 'Asia/Bangkok')::date = $${params.length}::date`);
     }
     if (table) {
       params.push(table);
@@ -147,7 +147,7 @@ router.get("/served-history", requireRole("manager", "kitchen", "waiter"), async
     const where = "WHERE o.payment_status = 'succeeded' AND o.fulfillment_status = 'served'";
     const [items, summary, recent] = await Promise.all([
       fetchOrders(where, [], { limit, offset: page * limit }),
-      query(`SELECT floor(extract(hour FROM o.order_time) / 4)::int AS bucket, count(*)::int AS count
+      query(`SELECT floor(extract(hour FROM o.created_at AT TIME ZONE 'Asia/Bangkok') / 4)::int AS bucket, count(*)::int AS count
              FROM orders o ${where} GROUP BY bucket ORDER BY count DESC, bucket`),
       page > 0 ? fetchOrders(where, [], { limit: 4, offset: 0 }) : Promise.resolve(null),
     ]);
@@ -238,8 +238,9 @@ router.post("/", async (req, res, next) => {
     await client.query(
       `INSERT INTO orders
         (id, table_name, note, total, amount_minor, currency, currency_exponent,
-         payment_status, fulfillment_status, status)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,'pending','not_started','pending_payment')`,
+         payment_status, fulfillment_status, status, order_date, order_time)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,'pending','not_started','pending_payment',
+         (now() AT TIME ZONE 'Asia/Bangkok')::date, (now() AT TIME ZONE 'Asia/Bangkok')::time)`,
       [orderId, table, note ?? null, minorToNumber(totalMinor, exponent), totalMinor.toString(), currency, exponent]
     );
 

@@ -15,6 +15,9 @@ export function HomePage() {
   const { t } = useLanguage();
 
   const filtered = useMemo(() => {
+    if (viewMode === "new") {
+      return products.filter(p => p.isNew).sort((a, b) => (b.createdAt ?? '').localeCompare(a.createdAt ?? '') || b.id.localeCompare(a.id)).slice(0, 2);
+    }
     if (viewMode === "bestseller") {
       return products.filter((p) => p.bestseller);
     }
@@ -25,6 +28,7 @@ export function HomePage() {
   }, [products, viewMode, category]);
 
   const sectionTitle = useMemo(() => {
+    if (viewMode === "new") return t("เมนูใหม่ล่าสุด", "Latest menu items");
     if (viewMode === "bestseller") return t("เมนูขายดีประจำร้าน", "Store bestsellers");
     if (viewMode === "recommended") return t("เมนูแนะนำ", "Recommended menu");
     const catLabel = categories.find((c) => c.id === category)?.label ?? "";
@@ -39,7 +43,7 @@ export function HomePage() {
       {viewMode !== "category" && (
         <div className="px-4 pt-3">
           <span className="inline-block rounded-full bg-accent-blue px-3 py-1 text-xs font-medium text-gray-800">
-            {viewMode === "bestseller" ? t("เมนูขายดี", "Bestsellers") : t("เมนูแนะนำ", "Recommended")}
+            {viewMode === "new" ? t("เมนูใหม่", "New menu") : viewMode === "bestseller" ? t("เมนูขายดี", "Bestsellers") : t("เมนูแนะนำ", "Recommended")}
           </span>
         </div>
       )}

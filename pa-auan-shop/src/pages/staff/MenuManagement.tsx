@@ -5,16 +5,13 @@ import { Search, Plus, CheckCircle2, XCircle, Grid2x2, Package, Pencil, Trash2, 
 import { PageHeader } from "../../components/staff/PageHeader";
 import { StatCard } from "../../components/staff/StatCard";
 import { CategorySidebar, type MenuCategoryId } from "../../components/staff/CategorySidebar";
-import { categoryMeta } from "../../config/constants";
+import { useCategories } from "../../context/CategoriesContext";
+import { createCategory } from "../../lib/api";
 import { createProduct, createTopping, deleteProduct, deleteTopping, fetchProducts, fetchToppingStock, subscribeToUpdates, updateProduct, updateTopping, updateToppingStock } from "../../lib/api";
 import type { CategoryId, Product, ToppingStockItem } from "../../types";
 
 const PAGE_SIZE = 4;
 // จำนวนแถวสินค้าต่อหน้า ใช้เฉพาะหมวดสินค้าปกติ (ท็อปปิ้งแสดงทั้งหมดในหน้าเดียว)
-const categories = (Object.keys(categoryMeta) as CategoryId[]).map((id) => ({
-  id,
-  label: categoryMeta[id].label,
-}));
 
 type ProductForm = {
   name: string;
@@ -38,6 +35,32 @@ const emptyForm = (category: CategoryId): ProductForm => ({
 });
 
 export function MenuManagement() {
+  const { categories, addCategory, error: categoryLoadError } = useCategories();
+  const [categoryOpen, setCategoryOpen] = useState(false);
+  const [categoryName, setCategoryName] = useState("");
+  const [categoryError, setCategoryError] = useState("");
+  const [categorySaving, setCategorySaving] = useState(false);
+  const openCategory = () => { setCategoryName(""); setCategoryError(""); setCategoryOpen(true); };
+  const saveCategory = async (event: FormEvent) => {
+    event.preventDefault();
+    const label = categoryName.trim();
+    if (!label) { setCategoryError("กรุณาระบุชื่อหมวดหมู่"); return; }
+    if (categories.some(item => item.label.trim().toLowerCase() === label.toLowerCase())) {
+      setCategoryError("มีชื่อหมวดหมู่นี้อยู่แล้ว"); return;
+    }
+    setCategorySaving(true);
+    setCategoryError("");
+    try {
+      const created = await createCategory(label);
+      addCategory(created);
+      setSelectedCategory(created.id);
+      setForm(current => ({ ...current, category: created.id }));
+      setPage(1);
+      setQuery("");
+      setCategoryOpen(false);
+    } catch (error) { setCategoryError(error instanceof Error ? error.message : "เพิ่มหมวดหมู่ไม่สำเร็จ"); }
+    finally { setCategorySaving(false); }
+  };
   // -------------------- ข้อมูลหลักที่โหลดจาก API --------------------
   const [products, setProducts] = useState<Product[]>([]);
   const [toppings, setToppings] = useState<ToppingStockItem[]>([]);
@@ -94,7 +117,7 @@ export function MenuManagement() {
     });
     counts.toppings = toppings.length;
     return counts;
-  }, [products, toppings]);
+  }, [products, toppings, categories]);
 
   const filtered = useMemo(() => {
     if (selectedCategory === "toppings") return [];
@@ -125,7 +148,7 @@ export function MenuManagement() {
       return;
     }
     setEditing(null);
-    setForm(emptyForm(selectedCategory));
+    setForm(emptyForm(categories.some(item => item.id === selectedCategory) ? selectedCategory : categories[0]?.id ?? ""));
     setModalOpen(true);
   };
 
@@ -205,7 +228,7 @@ export function MenuManagement() {
   const saveProduct = async (event: FormEvent) => {
     event.preventDefault();
     const price = Number(form.price);
-    if (!form.name.trim() || !Number.isFinite(price) || price < 0) {
+    if (!form.name.trim() || !Number.isFinite(price) || price < 0 || !categories.some(item => item.id === form.category)) {
       setMessage("กรุณากรอกชื่อสินค้าและราคาให้ถูกต้อง");
       return;
     }
@@ -282,6 +305,7 @@ export function MenuManagement() {
   return (
     <div className="max-w-6xl">
       <PageHeader title="จัดการสินค้า" subtitle="เพิ่ม ลบ หรือแก้ไขข้อมูลรายการสินค้าและราคา" />
+      {categoryLoadError && <p role="alert" className="mb-4 text-sm text-red-600">{categoryLoadError}</p>}
 
       <div className="flex flex-wrap gap-4 mb-6">
         <StatCard icon={<Package className="w-5 h-5" />} iconBgClass="bg-brand-light" iconColorClass="text-brand" label="สินค้าทั้งหมด" value={String(totalItemCount)} sublabel="รวมท็อปปิ้ง" highlighted />
@@ -299,6 +323,8 @@ export function MenuManagement() {
 
       <div className="flex flex-col lg:flex-row gap-6">
         <CategorySidebar
+          showAddButton
+          onAdd={openCategory}
           showToppings
           categoryCounts={categoryCounts}
           selected={selectedCategory}
@@ -311,7 +337,7 @@ export function MenuManagement() {
         <div className="flex-1 bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
           <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
             <p className="text-sm font-semibold text-gray-700">
-              {selectedCategory === "toppings" ? `รายการท็อปปิ้ง (${filteredToppings.length} รายการ)` : `รายการสินค้าในหมวด: ${categoryMeta[selectedCategory].label} (${filtered.length} รายการ)`}
+              {selectedCategory === "toppings" ? `รายการท็อปปิ้ง (${filteredToppings.length} รายการ)` : `รายการสินค้าในหมวด: ${categories.find(item => item.id === selectedCategory)?.label ?? "เลือกหมวดหมู่"} (${filtered.length} รายการ)`}
             </p>
             <div className="flex items-center gap-2">
               <div className="relative">
@@ -385,7 +411,7 @@ export function MenuManagement() {
         </div>
       </div>
 
-      {modalOpen && (
+      {modalOpen && !categoryOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" role="dialog" aria-modal="true">
           <form onSubmit={saveProduct} className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl">
             <div className="mb-5 flex items-center justify-between">
@@ -395,7 +421,7 @@ export function MenuManagement() {
             <div className="grid gap-4 sm:grid-cols-2">
               <label className="sm:col-span-2 text-sm text-gray-600">ชื่อสินค้า<input required value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 outline-none focus:border-brand" /></label>
               <label className="text-sm text-gray-600">ราคา (บาท)<input required type="number" min="0" step="0.01" value={form.price} onChange={(event) => setForm({ ...form, price: event.target.value })} className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 outline-none focus:border-brand" /></label>
-              <label className="text-sm text-gray-600">หมวดหมู่<select value={form.category} onChange={(event) => setForm({ ...form, category: event.target.value as CategoryId })} className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 outline-none focus:border-brand">{categories.map((category) => <option key={category.id} value={category.id}>{category.label}</option>)}</select></label>
+              <div><label className="text-sm text-gray-600">หมวดหมู่<select aria-label="หมวดหมู่" required value={form.category} onChange={(event) => setForm({ ...form, category: event.target.value })} className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 outline-none focus:border-brand"><option value="" disabled>เลือกหมวดหมู่</option>{categories.map((category) => <option key={category.id} value={category.id}>{category.label}</option>)}</select></label><button type="button" onClick={openCategory} className="mt-2 text-sm font-medium text-brand">+ เพิ่มหมวดหมู่ใหม่</button></div>
               <label className="sm:col-span-2 text-sm text-gray-600">URL รูปภาพ<input value={form.image} onChange={(event) => setForm({ ...form, image: event.target.value })} className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 outline-none focus:border-brand" /></label>
               <label className="flex items-center gap-2 text-sm text-gray-600"><input type="checkbox" checked={form.bestseller} onChange={(event) => setForm({ ...form, bestseller: event.target.checked })} /> สินค้าขายดี</label>
               <label className="flex items-center gap-2 text-sm text-gray-600"><input type="checkbox" checked={form.recommended} onChange={(event) => setForm({ ...form, recommended: event.target.checked })} /> สินค้าแนะนำ</label>
@@ -407,6 +433,15 @@ export function MenuManagement() {
           </form>
         </div>
       )}
+
+      {categoryOpen && <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" role="dialog" aria-modal="true" aria-label="เพิ่มหมวดหมู่ใหม่">
+        <form onSubmit={saveCategory} className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
+          <h2 className="mb-4 text-lg font-semibold">เพิ่มหมวดหมู่ใหม่</h2>
+          <label className="text-sm text-gray-600">ชื่อหมวดหมู่<input autoFocus required maxLength={100} disabled={categorySaving} value={categoryName} onChange={event => setCategoryName(event.target.value)} placeholder="เช่น เครื่องดื่ม" className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2" /></label>
+          {categoryError && <p role="alert" className="mt-3 text-sm text-red-600">{categoryError}</p>}
+          <div className="mt-5 flex justify-end gap-2"><button type="button" disabled={categorySaving} onClick={() => setCategoryOpen(false)} className="rounded-full border px-4 py-2 text-sm">ยกเลิก</button><button type="submit" disabled={categorySaving} className="rounded-full bg-brand px-4 py-2 text-sm text-white disabled:opacity-50">{categorySaving ? "กำลังบันทึก..." : "บันทึกหมวดหมู่"}</button></div>
+        </form>
+      </div>}
 
       {toppingModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" role="dialog" aria-modal="true">

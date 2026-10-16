@@ -53,25 +53,20 @@ const UI_TO_API_STATUS: Record<KitchenOrderStatus, FulfillmentStatus> = {
   served: "served",
 };
 
-function minutesAgoFromTime(time: string, stepStartedAt?: string | null): number {
+function minutesAgoFromTime(date: string, time: string, stepStartedAt?: string | null): number {
   if (stepStartedAt) {
     const startedAt = new Date(stepStartedAt).getTime();
     if (!Number.isNaN(startedAt)) return Math.max(0, Math.floor((Date.now() - startedAt) / 60000));
   }
-  const [h, m] = time.split(":").map(Number);
-  if (Number.isNaN(h) || Number.isNaN(m)) return 0;
-  const now = new Date();
-  const started = new Date(now);
-  started.setHours(h, m, 0, 0);
-  const diffMinutes = Math.floor((now.getTime() - started.getTime()) / 60000);
-  return diffMinutes > 0 ? diffMinutes : 0;
+  const started = new Date(`${date.slice(0, 10)}T${time.slice(0, 5)}:00+07:00`).getTime();
+  return Number.isNaN(started) ? 0 : Math.max(0, Math.floor((Date.now() - started) / 60000));
 }
 
 function orderToKitchenOrder(order: Order): KitchenOrder {
   return {
     id: order.id,
     table: order.table,
-    date: order.date,
+    date: order.date.slice(0, 10),
     time: order.time?.slice(0, 5) ?? order.time,
     note: order.note === "ร้อน" ? "ร้อน" : "เย็น",
     items: order.items.map((item) => ({
@@ -83,7 +78,7 @@ function orderToKitchenOrder(order: Order): KitchenOrder {
     })),
     total: order.total,
     status: API_TO_UI_STATUS[order.fulfillmentStatus] ?? "new",
-    stepStartedMinutesAgo: minutesAgoFromTime(order.time?.slice(0, 5) ?? order.time, order.stepStartedAt),
+    stepStartedMinutesAgo: minutesAgoFromTime(order.date, order.time, order.stepStartedAt),
     servedAt: order.servedAt,
     stepStartedAt: order.stepStartedAt,
   };
@@ -194,7 +189,7 @@ export function KitchenOrdersProvider({ children }: { children: ReactNode }) {
     document.addEventListener("visibilitychange", onVisible);
     const clock = setInterval(() => {
       setOrders(current => current.map(order => ({ ...order,
-        stepStartedMinutesAgo: minutesAgoFromTime(order.time, order.stepStartedAt),
+        stepStartedMinutesAgo: minutesAgoFromTime(order.date, order.time, order.stepStartedAt),
       })));
     }, 30000);
     return () => {

@@ -10,7 +10,7 @@ import { useCategories } from "./CategoriesContext";
 import type { CategoryId } from "../types";
 
 /** โหมดกรองหน้าเมนู: หมวดปกติ / เมนูแนะนำ / เมนูขายดี */
-export type MenuViewMode = "category" | "recommended" | "bestseller";
+export type MenuViewMode = "category" | "recommended" | "bestseller" | "new";
 
 /** state และคำสั่งควบคุมการเลื่อนหมวดของหน้าเมนูและ bottom navigation */
 interface MenuBrowseContextValue {

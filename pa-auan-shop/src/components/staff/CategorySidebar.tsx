@@ -2,6 +2,7 @@
 import { Plus, Package } from "lucide-react";
 import type { CategoryId } from "../../types";
 import { categoryMeta } from "../../config/constants";
+import { useCategories } from "../../context/CategoriesContext";
 
 export type MenuCategoryId = CategoryId | "toppings";
 interface CategorySidebarProps<T extends MenuCategoryId> {
@@ -9,6 +10,7 @@ interface CategorySidebarProps<T extends MenuCategoryId> {
   selected: T;
   onSelect: (id: T) => void;
   showAddButton?: boolean;
+  onAdd?: () => void;
   showToppings?: boolean;
 }
 
@@ -17,8 +19,10 @@ export function CategorySidebar<T extends MenuCategoryId>({
   selected,
   onSelect,
   showAddButton = false,
+  onAdd,
   showToppings = false,
 }: CategorySidebarProps<T>) {
+  const { categories } = useCategories();
   return (
     <div className="w-full lg:w-56 shrink-0 space-y-2">
       <p className="text-sm font-semibold text-gray-700 mb-2">หมวดหมู่สินค้า</p>
@@ -26,6 +30,7 @@ export function CategorySidebar<T extends MenuCategoryId>({
       {showAddButton && (
         <button
           type="button"
+          onClick={onAdd}
           className="w-full flex items-center justify-center gap-2 rounded-xl bg-brand text-white text-sm font-medium py-2.5 mb-2 hover:bg-brand-dark transition-colors"
         >
           <Plus className="w-4 h-4" />
@@ -33,8 +38,8 @@ export function CategorySidebar<T extends MenuCategoryId>({
         </button>
       )}
 
-      {(Object.keys(categoryMeta) as CategoryId[]).map((id) => {
-        const meta = categoryMeta[id];
+      {categories.map(({ id, label }) => {
+        const meta = categoryMeta[id] ?? { text: "text-brand", bg: "bg-brand-light", border: "border-brand" };
         const isActive = id === selected;
         return (
           <button
@@ -54,7 +59,7 @@ export function CategorySidebar<T extends MenuCategoryId>({
             </span>
             <span>
               <span className={`block text-sm font-semibold ${isActive ? meta.text : "text-gray-700"}`}>
-                {meta.label}
+                {label}
               </span>
               <span className="block text-xs text-gray-400">{categoryCounts[id] ?? 0} รายการ</span>
             </span>
