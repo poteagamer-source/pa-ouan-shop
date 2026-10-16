@@ -425,6 +425,10 @@ export function MenuManagement() {
               <label className="sm:col-span-2 text-sm text-gray-600">URL รูปภาพ<input value={form.image} onChange={(event) => setForm({ ...form, image: event.target.value })} className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 outline-none focus:border-brand" /></label>
               <label className="flex items-center gap-2 text-sm text-gray-600"><input type="checkbox" checked={form.bestseller} onChange={(event) => setForm({ ...form, bestseller: event.target.checked })} /> สินค้าขายดี</label>
               <label className="flex items-center gap-2 text-sm text-gray-600"><input type="checkbox" checked={form.recommended} onChange={(event) => setForm({ ...form, recommended: event.target.checked })} /> สินค้าแนะนำ</label>
+              <div className="sm:col-span-2 rounded-xl border border-orange-200 bg-orange-50 p-3">
+                <label className="flex items-center gap-2 text-sm font-medium text-orange-700"><input type="checkbox" checked={!editing || Boolean(editing.isNew)} disabled className="accent-orange-500" /> สินค้าใหม่ <span className="text-xs font-normal">(อัตโนมัติ)</span></label>
+                <p className="mt-1 text-xs text-gray-600">{!editing ? "เมื่อบันทึก สินค้านี้จะมีป้ายใหม่ โดยแสดงเฉพาะ 2 เมนูที่เพิ่มล่าสุดทั้งร้าน เมนูเก่าสุดจะกลับเป็นสินค้าทั่วไป" : "ป้ายใหม่แสดงเฉพาะ 2 เมนูที่เพิ่มล่าสุดทั้งร้าน การแก้ไขสินค้าไม่เปลี่ยนลำดับความใหม่"}</p>
+              </div>
             </div>
             <div className="mt-6 flex justify-end gap-2">
               <button type="button" onClick={() => setModalOpen(false)} className="rounded-full border border-gray-200 px-4 py-2 text-sm text-gray-600">ยกเลิก</button>
