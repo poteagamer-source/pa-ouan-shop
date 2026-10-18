@@ -13,8 +13,6 @@ function localDate(date = new Date()) {
 function daysAgo(days: number) { const date = new Date(); date.setDate(date.getDate() - days); return localDate(date); }
 function displayDate(value: string) { return value?.slice(0, 10) || "-"; }
 function displayTime(value: string) { return value?.slice(0, 5) || "-"; }
-function shiftDate(value: string, days: number) { const date = new Date(`${value}T00:00:00`); date.setDate(date.getDate() + days); return localDate(date); }
-function displayDateLabel(value: string) { return new Intl.DateTimeFormat("th-TH", { dateStyle: "long", timeZone: "Asia/Bangkok" }).format(new Date(`${value}T00:00:00+07:00`)); }
 const escapeXml = (value: unknown) => String(value ?? "").replace(/[<>&"']/g, (char) => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;", '"': "&quot;", "'": "&apos;" })[char]!);
 
 /** สร้าง Spreadsheet XML (.xls) ใน browser ข้อมูลจึงไม่ถูกส่งออกไปบริการภายนอก */
@@ -56,21 +54,19 @@ export function SalesReportPage() {
       <label className="text-xs font-medium text-gray-600">วันที่เริ่มต้น<input type="date" value={from} max={to} onChange={(event) => setFrom(event.target.value)} className="mt-1 block rounded-xl border border-gray-200 px-3 py-2 text-sm" /></label>
       <label className="text-xs font-medium text-gray-600">วันที่สิ้นสุด<input type="date" value={to} min={from} max={today} onChange={(event) => setTo(event.target.value)} className="mt-1 block rounded-xl border border-gray-200 px-3 py-2 text-sm" /></label>
       <button onClick={() => { setFrom(today); setTo(today); }} className="rounded-xl border px-3 py-2 text-sm">วันนี้</button>
-      <button onClick={() => { setFrom(shiftDate(to, -1)); setTo(shiftDate(to, -1)); }} disabled={from === to && from <= "2000-01-01"} className="rounded-xl border px-3 py-2 text-sm disabled:opacity-40">วันก่อนหน้า</button>
-      <button onClick={() => { const next = shiftDate(to, 1); if (next <= today) { setFrom(next); setTo(next); } }} disabled={from === to && from >= today} className="rounded-xl border px-3 py-2 text-sm disabled:opacity-40">วันถัดไป</button>
       <button onClick={() => { setFrom(daysAgo(6)); setTo(today); }} className="rounded-xl border px-3 py-2 text-sm">7 วัน</button>
       <button onClick={() => { setFrom(daysAgo(29)); setTo(today); }} className="rounded-xl border px-3 py-2 text-sm">30 วัน</button>
       <button disabled={!orders.length} onClick={() => exportExcel(orders, from, to)} className="ml-auto flex items-center gap-2 rounded-xl bg-green-600 px-4 py-2 text-sm font-medium text-white disabled:opacity-40"><Download className="h-4 w-4" />Export Excel</button>
     </div>
 
     <div className="mb-6 flex flex-wrap gap-4">
-      <StatCard icon={<FileText className="h-5 w-5" />} iconBgClass="bg-red-50" iconColorClass="text-red-500" label="ยอดขายวันที่เลือก" value={money(total)} valueColorClass="text-red-500" sublabel={`${from === to ? displayDateLabel(from) : `${displayDateLabel(from)} – ${displayDateLabel(to)}`} · ${orders.length} ออเดอร์`} />
-      <StatCard icon={<BellRing className="h-5 w-5" />} iconBgClass="bg-green-50" iconColorClass="text-green-500" label="ออเดอร์วันที่เลือก" value={String(orders.length)} valueColorClass="text-green-600" sublabel={`${from === to ? displayDateLabel(from) : `${displayDateLabel(from)} – ${displayDateLabel(to)}`} · ชำระเงินสำเร็จ`} />
+      <StatCard icon={<FileText className="h-5 w-5" />} iconBgClass="bg-red-50" iconColorClass="text-red-500" label="ยอดขายตามช่วงวันที่" value={money(total)} valueColorClass="text-red-500" sublabel={`จาก ${orders.length} ออเดอร์`} />
+      <StatCard icon={<BellRing className="h-5 w-5" />} iconBgClass="bg-green-50" iconColorClass="text-green-500" label="ออเดอร์ตามช่วงวันที่" value={String(orders.length)} valueColorClass="text-green-600" sublabel="ชำระเงินสำเร็จ" />
     </div>
     {loading && <div className="flex justify-center gap-2 py-12 text-sm text-gray-500"><Loader2 className="h-4 w-4 animate-spin" />กำลังโหลดข้อมูล</div>}
     {error && <p className="mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-600">{error}</p>}
 
-    <MonthlySalesTable from={from} to={to} />
+    <MonthlySalesTable />
 
     {!loading && !error && <>
       {/* รายการที่ชำระสำเร็จ ใช้วันที่/เวลารับเงินจริงจาก API */}
