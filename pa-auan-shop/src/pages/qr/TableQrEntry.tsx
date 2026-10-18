@@ -2,15 +2,26 @@
 import { useEffect, useState } from "react";
 import { Navigate, useParams } from "react-router-dom";
 import { resolveTableQrCode } from "../../lib/api";
+import { useCart } from "../../context/CartContext";
 
 export function TableQrEntry() {
+  const { clearCart, setLastOrderId, clearTrackedOrder } = useCart();
   const { token = "" } = useParams();
   const [tableId, setTableId] = useState<string | null>(null);
   const [error, setError] = useState("");
 
   useEffect(() => {
-    resolveTableQrCode(token).then((result) => setTableId(result.tableId)).catch((reason) => setError(reason instanceof Error ? reason.message : "QR ไม่ถูกต้อง"));
-  }, [token]);
+    let active = true;
+    resolveTableQrCode(token).then(result => {
+      if (!active) return;
+      const previous = window.localStorage.getItem(`lastOrderId:${result.tableId}`);
+      if (previous) clearTrackedOrder(result.tableId, previous);
+      clearCart();
+      setLastOrderId(null);
+      setTableId(result.tableId);
+    }).catch(reason => { if (active) setError(reason instanceof Error ? reason.message : "QR ไม่ถูกต้อง"); });
+    return () => { active = false; };
+  }, [token, clearCart, setLastOrderId, clearTrackedOrder]);
 
   if (tableId) return <Navigate to={`/order/${encodeURIComponent(tableId)}`} replace />;
   return <main className="flex min-h-dvh items-center justify-center bg-gray-50 p-6 text-center"><div className="rounded-2xl bg-white p-8 shadow-sm"><p className={error ? "text-red-500" : "text-gray-500"}>{error || "กำลังตรวจสอบ QR..."}</p>{error && <a href="/" className="mt-4 inline-block rounded-lg bg-brand px-5 py-2 text-sm text-white">กลับหน้าหลัก</a>}</div></main>;

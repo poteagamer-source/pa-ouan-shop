@@ -6,8 +6,6 @@ import { requireRole } from "../auth.js";
 import { cleanProductName, assertProductNameAvailable } from "../product-name.js";
 
 const router = Router();
-// Rank the full catalog before category/stock filters: at most two products are new.
-const NEW_PRODUCT = "products.id IN (SELECT id FROM products ORDER BY created_at DESC, id DESC LIMIT 2)";
 
 const mapProduct = (r) => ({
   id: r.id,
@@ -41,7 +39,7 @@ router.get("/", async (req, res, next) => {
 
     const where = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "";
     const { rows } = await query(
-      `SELECT *, ${NEW_PRODUCT} AS is_new FROM products ${where} ORDER BY category_id, id`,
+      `SELECT * FROM products ${where} ORDER BY category_id, id`,
       params
     );
     res.json(rows.map(mapProduct));
@@ -53,7 +51,7 @@ router.get("/", async (req, res, next) => {
 // GET /api/products/:id
 router.get("/:id", async (req, res, next) => {
   try {
-    const { rows } = await query(`SELECT *, ${NEW_PRODUCT} AS is_new FROM products WHERE id = $1`, [req.params.id]);
+    const { rows } = await query(`SELECT * FROM products WHERE id = $1`, [req.params.id]);
     if (!rows[0]) return res.status(404).json({ error: "ไม่พบสินค้า" });
     res.json(mapProduct(rows[0]));
   } catch (err) {
@@ -65,7 +63,8 @@ router.get("/:id", async (req, res, next) => {
 router.post("/", requireRole("manager"), async (req, res, next) => {
   let client;
   try {
-    const { id, name, price, category, image, bestseller = false, recommended = false } = req.body;
+    const { id, name, price, category, image, bestseller = false, recommended = false, isNew = false } = req.body;
+    if (typeof isNew !== 'boolean') return res.status(400).json({ error: 'สินค้าใหม่ต้องเป็นค่าเปิดหรือปิด' });
     if (!name || price === undefined || !category) {
       return res.status(400).json({ error: "ต้องระบุ name, price, category" });
     }
@@ -76,9 +75,9 @@ router.post("/", requireRole("manager"), async (req, res, next) => {
     //ตรวจชื่อซ้ำ//
     await assertProductNameAvailable(client, productName);
     const { rows } = await client.query(
-      `INSERT INTO products (id, name, price, category_id, image, bestseller, recommended)
-       VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *`,
-      [productId, productName, price, category, image ?? null, bestseller, recommended]
+      `INSERT INTO products (id, name, price, category_id, image, bestseller, recommended, is_new)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *`,
+      [productId, productName, price, category, image ?? null, bestseller, recommended, isNew]
     );
     // สร้างแถวสต๊อกเริ่มต้นให้ด้วย
     await client.query(
@@ -86,10 +85,9 @@ router.post("/", requireRole("manager"), async (req, res, next) => {
        ON CONFLICT (product_id) DO NOTHING`,
       [productId]
     );
-    const latest = await client.query(`SELECT *, ${NEW_PRODUCT} AS is_new FROM products WHERE id = $1`, [rows[0].id]);
     await client.query("COMMIT");
     publishUpdate("products", "created", productId);
-    res.status(201).json(mapProduct(latest.rows[0]));
+    res.status(201).json(mapProduct(rows[0]));
   } catch (err) {
     if (client) await client.query("ROLLBACK");
     if (err.status === 400 || err.status === 409) return res.status(err.status).json({ error: err.message });
@@ -102,7 +100,8 @@ router.post("/", requireRole("manager"), async (req, res, next) => {
 router.put("/:id", requireRole("manager"), async (req, res, next) => {
   let client;
   try {
-    const { name, price, category, image, bestseller, recommended, active } = req.body;
+    const { name, price, category, image, bestseller, recommended, active, isNew } = req.body;
+    if (isNew !== undefined && typeof isNew !== 'boolean') return res.status(400).json({ error: 'สินค้าใหม่ต้องเป็นค่าเปิดหรือปิด' });
     const productName = name === undefined ? undefined : cleanProductName(name);
     client = await pool.connect();
     await client.query("BEGIN");
@@ -115,9 +114,10 @@ router.put("/:id", requireRole("manager"), async (req, res, next) => {
          image = COALESCE($5, image),
          bestseller = COALESCE($6, bestseller),
          recommended = COALESCE($7, recommended),
-         active = COALESCE($8, active)
-       WHERE id = $1 RETURNING *, ${NEW_PRODUCT} AS is_new`,
-      [req.params.id, productName, price, category, image, bestseller, recommended, active]
+         active = COALESCE($8, active),
+         is_new = COALESCE($9, is_new)
+       WHERE id = $1 RETURNING *`,
+      [req.params.id, productName, price, category, image, bestseller, recommended, active, isNew]
     );
     if (!rows[0]) {
       await client.query("ROLLBACK");

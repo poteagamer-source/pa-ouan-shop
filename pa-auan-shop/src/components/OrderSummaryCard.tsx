@@ -1,6 +1,7 @@
 import { OptimizedImage } from './OptimizedImage';
 /** การ์ดสรุปตะกร้า/ออเดอร์ แยกแต่ละเมนู ท็อปปิ้ง อุณหภูมิ และยอดรวม */
 import type { CartItem } from "../types";
+import type { ReactNode } from "react";
 import { useLanguage } from "../context/LanguageContext";
 
 interface Props {
@@ -8,10 +9,11 @@ interface Props {
   total: number;
   showTag?: boolean;
   currency?: string;
+  renderControls?: (item: CartItem, index: number) => ReactNode;
 }
 
 /** แยกสินค้าแต่ละเมนูเป็นคนละการ์ด และแสดงยอดรวมไว้ท้ายรายการ */
-export function OrderSummaryCard({ items, total, showTag = true, currency = "THB" }: Props) {
+export function OrderSummaryCard({ items, total, showTag = true, currency = "THB", renderControls }: Props) {
   const { t, language } = useLanguage();
   if (items.length === 0) return null;
   const money = (value: number) => new Intl.NumberFormat(language === "en" ? "en-US" : "th-TH", { style: "currency", currency }).format(value);
@@ -39,6 +41,7 @@ export function OrderSummaryCard({ items, total, showTag = true, currency = "THB
                 </span>}
               </div>
             </div>
+            {renderControls?.(item, index)}
           </article>
         );
       })}

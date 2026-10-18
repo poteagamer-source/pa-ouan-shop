@@ -36,6 +36,29 @@ async function setup(page: Page) {
   return state;
 }
 
+test('manager can mark a product as new and unmark it when editing', async ({ page }) => {
+  const state = await setup(page);
+  await page.getByRole('button', { name: 'เพิ่มสินค้า', exact: true }).click();
+  const checkbox = page.getByRole('checkbox', { name: 'สินค้าใหม่', exact: true });
+  await expect(checkbox).not.toBeChecked();
+  await checkbox.check();
+  await page.getByLabel('ชื่อสินค้า', { exact: true }).fill('เมนูใหม่ทดสอบ');
+  await page.getByLabel('ราคา (บาท)', { exact: true }).fill('40');
+  await page.getByRole('button', { name: 'บันทึก', exact: true }).click();
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  expect(state.products[0].isNew).toBe(true);
+  await page.route('**/api/products/P1', async route => {
+    Object.assign(state.products[0], route.request().postDataJSON());
+    await route.fulfill({ json: state.products[0] });
+  });
+  await page.getByRole('row').filter({ hasText: 'เมนูใหม่ทดสอบ' }).getByRole('button', { name: 'แก้ไข', exact: true }).click();
+  await expect(checkbox).toBeChecked();
+  await checkbox.uncheck();
+  await page.getByRole('button', { name: 'บันทึก', exact: true }).click();
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  expect(state.products[0].isNew).toBe(false);
+});
+
 test('upload previews the stored image and saves its URL with the product', async ({ page }) => {
   const state = await setup(page);
   let finishUpload!: () => void;

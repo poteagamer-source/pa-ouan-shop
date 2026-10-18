@@ -17,10 +17,13 @@ interface CartContextValue {
   /** ยอดรวม base price + toppings คูณ quantity ของทุกบรรทัด */
   total: number;
   addItem: (item: CartItem) => void;
+  replaceItems: (items: CartItem[]) => void;
   clearCart: () => void;
   /** id ของออเดอร์ล่าสุดที่สร้างไปแล้ว (ใช้ติดตามสถานะในหน้า OrderStatusPage) */
   lastOrderId: string | null;
   setLastOrderId: (id: string | null) => void;
+  clearTrackedOrder: (tableId: string, orderId: string) => void;
+  trackingVersion: number;
 }
 
 // null ช่วยป้องกันการใช้ useCart นอก CartProvider
@@ -31,6 +34,13 @@ export function CartProvider({ children }: { children: ReactNode }) {
   // items คือรายการที่ยังไม่สร้างออเดอร์; lastOrderId ใช้ติดตามออเดอร์หลังออกจาก Stripe
   const [items, setItems] = useState<CartItem[]>([]);
   const [lastOrderId, setLastOrderId] = useState<string | null>(null);
+  const [trackingVersion, setTrackingVersion] = useState(0);
+  const clearTrackedOrder = useCallback((tableId: string, orderId: string) => {
+    const key = `lastOrderId:${tableId}`;
+    if (window.localStorage.getItem(key) === orderId) window.localStorage.removeItem(key);
+    setLastOrderId(current => current === orderId ? null : current);
+    setTrackingVersion(current => current + 1);
+  }, []);
 
   // ไม่รวมสินค้าชื่อเดียวกัน เพราะ topping/temperature ของแต่ละรายการอาจต่างกัน
   const addItem = useCallback((item: CartItem) => {
@@ -38,6 +48,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const clearCart = useCallback(() => setItems([]), []);
+  const replaceItems = useCallback((next: CartItem[]) => setItems(next), []);
 
   // คำนวณใหม่เฉพาะเมื่อ items เปลี่ยน ไม่เก็บยอดซ้ำใน state เพื่อป้องกันข้อมูลไม่ตรงกัน
   const total = useMemo(
@@ -53,8 +64,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const cartCount = items.length;
 
   const value = useMemo(
-    () => ({ items, cartCount, total, addItem, clearCart, lastOrderId, setLastOrderId }),
-    [items, cartCount, total, addItem, clearCart, lastOrderId],
+    () => ({ items, cartCount, total, addItem, replaceItems, clearCart, lastOrderId, setLastOrderId, clearTrackedOrder, trackingVersion }),
+    [items, cartCount, total, addItem, replaceItems, clearCart, lastOrderId, clearTrackedOrder, trackingVersion],
   );
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;

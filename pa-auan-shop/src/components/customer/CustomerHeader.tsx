@@ -1,5 +1,7 @@
 /** Header ลูกค้า: ชื่อร้าน ภาษา โต๊ะ ช่องค้นหา รถเข็น และ badge จำนวนรายการ */
 import { Link, useLocation } from "react-router-dom";
+import { useEffect } from "react";
+import { fetchOrder } from "../../lib/api";
 import { ClipboardList, Menu, ShoppingCart } from "lucide-react";
 import { SHOP_NAME } from "../../config/constants";
 import { useCart } from "../../context/CartContext";
@@ -12,7 +14,7 @@ import { useLanguage } from "../../context/LanguageContext";
 
 export function CustomerHeader() {
   const { t } = useLanguage();
-  const { cartCount, lastOrderId } = useCart();
+  const { cartCount, clearTrackedOrder } = useCart();
   const { tableId } = useTable();
   const paths = useCustomerPath();
   const location = useLocation();
@@ -21,9 +23,27 @@ export function CustomerHeader() {
 
   const isMenuPage = location.pathname.endsWith("/menu");
   const isStatusPage = location.pathname.endsWith("/status");
-  const hasRecentOrder = Boolean(
-    lastOrderId || window.localStorage.getItem(`lastOrderId:${tableId}`),
-  );
+  const trackedOrderId = window.localStorage.getItem(`lastOrderId:${tableId}`);
+  const hasRecentOrder = Boolean(trackedOrderId);
+  useEffect(() => {
+    // The status page already polls; other customer pages still retire completed orders.
+    if (!trackedOrderId || isStatusPage) return;
+    let active = true;
+    let running = false;
+    const check = async () => {
+      if (running) return;
+      running = true;
+      try {
+        const order = await fetchOrder(trackedOrderId);
+        if (active && order.fulfillmentStatus === 'served') clearTrackedOrder(tableId, trackedOrderId);
+      } catch { /* Keep tracking when the server is temporarily unavailable. */ }
+      finally { running = false; }
+    };
+    void check();
+    const timer = window.setInterval(() => { if (document.visibilityState === 'visible') void check(); }, 3000);
+    window.addEventListener('focus', check);
+    return () => { active = false; window.clearInterval(timer); window.removeEventListener('focus', check); };
+  }, [trackedOrderId, isStatusPage, tableId, clearTrackedOrder]);
   const searchPlaceholder =
     isMenuPage && menuBrowse?.viewMode === "category"
       ? t(categories.find((c) => c.id === menuBrowse.category)?.label ?? "ค้นหาเมนู")

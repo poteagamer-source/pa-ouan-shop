@@ -73,20 +73,26 @@ export function OrderStatusPage() {
   const { tableId } = useTable();
   const navigate = useNavigate();
   const paths = useCustomerPath();
-  const { lastOrderId } = useCart();
-  const orderId = lastOrderId ?? window.localStorage.getItem(`lastOrderId:${tableId}`);
+  const { clearTrackedOrder } = useCart();
+  const orderId = window.localStorage.getItem(`lastOrderId:${tableId}`);
   const [order, setOrder] = useState<Order | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   // poll ออเดอร์เดียวเป็น fallback เพราะ Stripe PromptPay และ webhook เป็น asynchronous
   useEffect(() => {
-    if (!orderId) return;
+    if (!orderId) { setOrder(null); setError(null); return; }
     let active = true;
     /** โหลดสถานะล่าสุด; เมื่อจ่ายสำเร็จแล้วคง polling ต่อเพื่อรับสถานะครัว/เสิร์ฟ */
     const load = async () => {
       try {
         const latest = await fetchOrder(orderId);
         if (active) {
+          if (latest.fulfillmentStatus === 'served') {
+            clearTrackedOrder(tableId, orderId);
+            setOrder(null);
+            setError(null);
+            return;
+          }
           setOrder(latest);
           setError(null);
         }
@@ -100,7 +106,7 @@ export function OrderStatusPage() {
       active = false;
       window.clearInterval(timer);
     };
-  }, [orderId]);
+  }, [orderId, tableId, clearTrackedOrder]);
 
   // แปลง snapshot จาก backend ให้ component สรุปรายการเดิมใช้ได้
   const summaryItems = useMemo<CartItem[]>(() => {
@@ -129,7 +135,7 @@ export function OrderStatusPage() {
           </div>
         )}
         {error && <p className="text-center text-sm text-red-500 py-6">{error}</p>}
-        {order && status && (
+        {orderId && order && status && (
           <>
             <div className={`rounded-xl px-4 py-4 text-center ${status[2]}`}>
               <p className="text-lg font-bold">{status[0]}</p>

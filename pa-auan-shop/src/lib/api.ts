@@ -149,6 +149,7 @@ export function createProduct(payload: {
   image?: string;
   bestseller?: boolean;
   recommended?: boolean;
+  isNew?: boolean;
 }): Promise<Product> {
   return request("/products", { method: "POST", body: JSON.stringify(payload) });
 }
@@ -162,6 +163,7 @@ export function updateProduct(
     image: string;
     bestseller: boolean;
     recommended: boolean;
+    isNew: boolean;
     active: boolean;
   }>,
 ): Promise<Product> {

@@ -16,7 +16,7 @@ export function HomePage() {
 
   const filtered = useMemo(() => {
     if (viewMode === "new") {
-      return products.filter(p => p.isNew).sort((a, b) => (b.createdAt ?? '').localeCompare(a.createdAt ?? '') || b.id.localeCompare(a.id)).slice(0, 2);
+      return products.filter(p => p.isNew).sort((a, b) => (b.createdAt ?? '').localeCompare(a.createdAt ?? '') || b.id.localeCompare(a.id));
     }
     if (viewMode === "bestseller") {
       return products.filter((p) => p.bestseller);

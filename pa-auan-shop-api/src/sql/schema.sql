@@ -27,6 +27,8 @@ CREATE TABLE IF NOT EXISTS products (
   created_at  timestamptz NOT NULL DEFAULT now()
 );
 
+ALTER TABLE products ADD COLUMN IF NOT EXISTS is_new boolean NOT NULL DEFAULT false;
+
 CREATE TABLE IF NOT EXISTS toppings (
   id    text PRIMARY KEY,
   name  text NOT NULL,

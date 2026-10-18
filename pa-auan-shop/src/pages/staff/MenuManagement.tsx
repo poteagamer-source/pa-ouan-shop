@@ -21,6 +21,7 @@ type ProductForm = {
   image: string;
   bestseller: boolean;
   recommended: boolean;
+  isNew: boolean;
 };
 
 type ToppingForm = { name: string; price: string; image: string; tier: 5 | 10; stockQty: string };
@@ -33,6 +34,7 @@ const emptyForm = (category: CategoryId): ProductForm => ({
   image: "/images/food-bualoy.png",
   bestseller: false,
   recommended: false,
+  isNew: false,
 });
 
 export function MenuManagement() {
@@ -229,6 +231,7 @@ export function MenuManagement() {
       image: product.image || "/images/food-bualoy.png",
       bestseller: Boolean(product.bestseller),
       recommended: Boolean(product.recommended),
+      isNew: Boolean(product.isNew),
     });
     setModalOpen(true);
   };
@@ -256,6 +259,7 @@ export function MenuManagement() {
         image: form.image.trim() || "/images/food-bualoy.png",
         bestseller: form.bestseller,
         recommended: form.recommended,
+        isNew: form.isNew,
       };
       if (editing) {
         const updated = await updateProduct(editing.id, payload);
@@ -442,8 +446,8 @@ export function MenuManagement() {
               <label className="flex items-center gap-2 text-sm text-gray-600"><input type="checkbox" checked={form.bestseller} onChange={(event) => setForm({ ...form, bestseller: event.target.checked })} /> สินค้าขายดี</label>
               <label className="flex items-center gap-2 text-sm text-gray-600"><input type="checkbox" checked={form.recommended} onChange={(event) => setForm({ ...form, recommended: event.target.checked })} /> สินค้าแนะนำ</label>
               <div className="sm:col-span-2 rounded-xl border border-orange-200 bg-orange-50 p-3">
-                <label className="flex items-center gap-2 text-sm font-medium text-orange-700"><input type="checkbox" checked={!editing || Boolean(editing.isNew)} disabled className="accent-orange-500" /> สินค้าใหม่ <span className="text-xs font-normal">(อัตโนมัติ)</span></label>
-                <p className="mt-1 text-xs text-gray-600">{!editing ? "เมื่อบันทึก สินค้านี้จะมีป้ายใหม่ โดยแสดงเฉพาะ 2 เมนูที่เพิ่มล่าสุดทั้งร้าน เมนูเก่าสุดจะกลับเป็นสินค้าทั่วไป" : "ป้ายใหม่แสดงเฉพาะ 2 เมนูที่เพิ่มล่าสุดทั้งร้าน การแก้ไขสินค้าไม่เปลี่ยนลำดับความใหม่"}</p>
+                <label className="flex items-center gap-2 text-sm font-medium text-orange-700"><input type="checkbox" checked={form.isNew} onChange={event => setForm(current => ({ ...current, isNew: event.target.checked }))} className="accent-orange-500" /> สินค้าใหม่</label>
+                <p className="mt-1 text-xs text-gray-600">ติ๊กเพื่อแสดงป้ายใหม่และแสดงในแท็บเมนูใหม่ เลือกได้ไม่จำกัดจำนวน ยกเลิกติ๊กเมื่อต้องการนำออก</p>
               </div>
             </div>
             <div className="mt-6 flex justify-end gap-2">

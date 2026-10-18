@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 
-test('only two latest items have badges and realtime addition retires the older badge', async ({ page }) => {
+test('manually marked items are unlimited and only lose their badge when unmarked', async ({ page }) => {
   const product = (id: string, isNew: boolean) => ({ id, name: `เมนู ${id}`, category: 'bualoy', price: 35,
     image: '/images/menu-bl1.png', active: true, isNew, createdAt: `2026-10-${id.slice(1)}T00:00:00Z` });
   let products = [product('P10', false), product('P11', true), product('P12', true)];
@@ -28,9 +28,13 @@ test('only two latest items have badges and realtime addition retires the older 
   await expect(page.getByRole('heading', { name: 'เมนูใหม่ล่าสุด' })).toBeVisible();
   await expect(page.getByText('เมนู P10', { exact: true })).toHaveCount(0);
   await expect(page.getByText('เมนู P11', { exact: true })).toBeVisible();
-  products = [product('P10', false), product('P11', false), product('P12', true), product('P13', true)];
+  products = [product('P10', false), product('P11', true), product('P12', true), product('P13', true)];
   await page.evaluate(() => (window as any).productStream.listeners.update({ data: JSON.stringify({ resource: 'products', action: 'created', id: 'P13' }) }));
   await expect(page.getByText('เมนู P13', { exact: true })).toBeVisible();
+  await expect(page.getByText('เมนู P11', { exact: true })).toBeVisible();
+  await expect(page.getByLabel('สินค้าใหม่', { exact: true })).toHaveCount(3);
+  products = products.map(item => item.id === 'P11' ? { ...item, isNew: false } : item);
+  await page.evaluate(() => (window as any).productStream.listeners.update({ data: JSON.stringify({ resource: 'products', action: 'updated', id: 'P11' }) }));
   await expect(page.getByText('เมนู P11', { exact: true })).toHaveCount(0);
   await expect(page.getByLabel('สินค้าใหม่', { exact: true })).toHaveCount(2);
   await page.getByRole('link', { name: 'สั่งอาหารเพิ่ม', exact: true }).click();
