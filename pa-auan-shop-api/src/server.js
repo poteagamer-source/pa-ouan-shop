@@ -7,6 +7,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import categoriesRouter from "./routes/categories.js";
+import imagesRouter from "./routes/images.js";
 import productsRouter from "./routes/products.js";
 import toppingsRouter from "./routes/toppings.js";
 import stockRouter from "./routes/stock.js";
@@ -51,6 +52,7 @@ app.use("/api/qr-codes", qrCodesRouter);
 
 // Route หลักของระบบร้านค้า (บาง route จำกัดสิทธิ์ตาม role)
 app.use("/api/categories", categoriesRouter);
+app.use("/api/images", imagesRouter);
 app.use("/api/products", productsRouter);
 app.use("/api/toppings", toppingsRouter);
 app.use("/api/stock", requireRole("manager"), stockRouter);

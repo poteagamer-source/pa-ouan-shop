@@ -3,6 +3,7 @@ import { Router } from "express";
 import { pool, query } from "../db.js";
 import { publishUpdate } from "../realtime.js";
 import { requireRole } from "../auth.js";
+import { cleanProductName, assertProductNameAvailable } from "../product-name.js";
 
 const router = Router();
 // Rank the full catalog before category/stock filters: at most two products are new.
@@ -62,37 +63,51 @@ router.get("/:id", async (req, res, next) => {
 
 // POST /api/products  (สร้างเมนูใหม่ — ใช้จากหน้าจัดการเมนู)
 router.post("/", requireRole("manager"), async (req, res, next) => {
+  let client;
   try {
     const { id, name, price, category, image, bestseller = false, recommended = false } = req.body;
     if (!name || price === undefined || !category) {
       return res.status(400).json({ error: "ต้องระบุ name, price, category" });
     }
     const productId = id || `P${Date.now()}`;
-    const { rows } = await query(
+    const productName = cleanProductName(name);
+    client = await pool.connect();
+    await client.query("BEGIN");
+    //ตรวจชื่อซ้ำ//
+    await assertProductNameAvailable(client, productName);
+    const { rows } = await client.query(
       `INSERT INTO products (id, name, price, category_id, image, bestseller, recommended)
        VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *`,
-      [productId, name, price, category, image ?? null, bestseller, recommended]
+      [productId, productName, price, category, image ?? null, bestseller, recommended]
     );
     // สร้างแถวสต๊อกเริ่มต้นให้ด้วย
-    await query(
+    await client.query(
       `INSERT INTO stock (product_id, stock_qty, unit) VALUES ($1, 0, 'ถ้วย')
        ON CONFLICT (product_id) DO NOTHING`,
       [productId]
     );
+    const latest = await client.query(`SELECT *, ${NEW_PRODUCT} AS is_new FROM products WHERE id = $1`, [rows[0].id]);
+    await client.query("COMMIT");
     publishUpdate("products", "created", productId);
-    const latest = await query(`SELECT *, ${NEW_PRODUCT} AS is_new FROM products WHERE id = $1`, [rows[0].id]);
     res.status(201).json(mapProduct(latest.rows[0]));
   } catch (err) {
+    if (client) await client.query("ROLLBACK");
+    if (err.status === 400 || err.status === 409) return res.status(err.status).json({ error: err.message });
     if (err.code === "23505") return res.status(409).json({ error: "มีรหัสสินค้านี้อยู่แล้ว" });
     next(err);
-  }
+  } finally { client?.release(); }
 });
 
 // PUT /api/products/:id
 router.put("/:id", requireRole("manager"), async (req, res, next) => {
+  let client;
   try {
     const { name, price, category, image, bestseller, recommended, active } = req.body;
-    const { rows } = await query(
+    const productName = name === undefined ? undefined : cleanProductName(name);
+    client = await pool.connect();
+    await client.query("BEGIN");
+    if (productName !== undefined) await assertProductNameAvailable(client, productName, req.params.id);
+    const { rows } = await client.query(
       `UPDATE products SET
          name = COALESCE($2, name),
          price = COALESCE($3, price),
@@ -102,14 +117,20 @@ router.put("/:id", requireRole("manager"), async (req, res, next) => {
          recommended = COALESCE($7, recommended),
          active = COALESCE($8, active)
        WHERE id = $1 RETURNING *, ${NEW_PRODUCT} AS is_new`,
-      [req.params.id, name, price, category, image, bestseller, recommended, active]
+      [req.params.id, productName, price, category, image, bestseller, recommended, active]
     );
-    if (!rows[0]) return res.status(404).json({ error: "ไม่พบสินค้า" });
+    if (!rows[0]) {
+      await client.query("ROLLBACK");
+      return res.status(404).json({ error: "ไม่พบสินค้า" });
+    }
+    await client.query("COMMIT");
     publishUpdate("products", "updated", req.params.id);
     res.json(mapProduct(rows[0]));
   } catch (err) {
+    if (client) await client.query("ROLLBACK");
+    if (err.status === 400 || err.status === 409) return res.status(err.status).json({ error: err.message });
     next(err);
-  }
+  } finally { client?.release(); }
 });
 
 // DELETE /api/products/:id

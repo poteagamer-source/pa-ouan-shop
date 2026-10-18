@@ -8,6 +8,13 @@ CREATE TABLE IF NOT EXISTS categories (
   label text NOT NULL
 );
 
+-- Compressed, immutable menu images survive application rebuilds/restarts.
+CREATE TABLE IF NOT EXISTS product_images (
+  id text PRIMARY KEY,
+  data bytea NOT NULL CHECK (octet_length(data) <= 204800),
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+
 CREATE TABLE IF NOT EXISTS products (
   id          text PRIMARY KEY,
   name        text NOT NULL,

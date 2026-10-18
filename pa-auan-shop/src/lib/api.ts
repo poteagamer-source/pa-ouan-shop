@@ -76,6 +76,13 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
 }
 
 /* -------------------------- การยืนยันตัวตนพนักงาน -------------------------- */
+export async function uploadProductImage(file: File, signal?: AbortSignal): Promise<{ url: string; bytes: number }> {
+  const result = await request<{ url: string; bytes: number }>('/images', {
+    method: 'POST', headers: { 'Content-Type': file.type }, body: file,
+    signal: signal ? AbortSignal.any([signal, AbortSignal.timeout(60000)]) : AbortSignal.timeout(60000),
+  });
+  return { ...result, url: BASE_URL.startsWith('http') ? new URL(result.url, BASE_URL).href : result.url };
+}
 // Cookie session ถูกส่งด้วย credentials: include ใน request() จึงไม่ต้องแนบ token ทีละฟังก์ชัน
 
 export function loginStaff(username: string, password: string): Promise<StaffUser> {

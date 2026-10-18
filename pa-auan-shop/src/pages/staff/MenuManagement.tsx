@@ -1,3 +1,4 @@
+import { ProductImageInput } from "../../components/staff/ProductImageInput";
 import { OptimizedImage } from '../../components/OptimizedImage';
 /** CRUD เมนูและท็อปปิ้ง พร้อมราคา สถานะ สต๊อกย่อ และการค้นหา/แบ่งหน้า */
 import { useEffect, useMemo, useState, type FormEvent, type KeyboardEvent } from "react";
@@ -69,10 +70,12 @@ export function MenuManagement() {
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [imageBusy, setImageBusy] = useState(false);
   const [message, setMessage] = useState("");
   const [editing, setEditing] = useState<Product | null>(null);
   const [form, setForm] = useState<ProductForm>(emptyForm("bualoy"));
   const [modalOpen, setModalOpen] = useState(false);
+  const [productError, setProductError] = useState("");
   // -------------------- สถานะ modal สำหรับเพิ่ม/แก้ไขท็อปปิ้ง --------------------
   const [toppingModalOpen, setToppingModalOpen] = useState(false);
   const [editingTopping, setEditingTopping] = useState<ToppingStockItem | null>(null);
@@ -141,6 +144,8 @@ export function MenuManagement() {
 
   // -------------------- เปิดหน้าต่างเพิ่มสินค้า/ท็อปปิ้งตามหมวดที่เลือก --------------------
   const openCreate = () => {
+    setImageBusy(false);
+    setProductError("");
     if (selectedCategory === "toppings") {
       setEditingTopping(null);
       setToppingForm(emptyToppingForm);
@@ -153,6 +158,7 @@ export function MenuManagement() {
   };
 
   const openEditTopping = (item: ToppingStockItem) => {
+    setImageBusy(false);
     setEditingTopping(item);
     setToppingForm({ name: item.name, price: String(item.price), image: item.image || "", tier: item.tier, stockQty: String(item.stockQty) });
     setToppingModalOpen(true);
@@ -161,6 +167,7 @@ export function MenuManagement() {
   /** เพิ่มท็อปปิ้งใหม่ หรือแก้ทั้งข้อมูลท็อปปิ้งและจำนวนสต๊อกของรายการเดิม */
   const saveTopping = async (event: FormEvent) => {
     event.preventDefault();
+    if (imageBusy || saving) return;
     const price = Number(toppingForm.price);
     const stockQty = Number(toppingForm.stockQty);
     if (!toppingForm.name.trim() || !Number.isFinite(price) || price < 0 || !Number.isInteger(stockQty) || stockQty < 0) {
@@ -212,6 +219,8 @@ export function MenuManagement() {
   };
 
   const openEdit = (product: Product) => {
+    setImageBusy(false);
+    setProductError("");
     setEditing(product);
     setForm({
       name: product.name,
@@ -227,9 +236,15 @@ export function MenuManagement() {
   /** ตรวจฟอร์มและเรียก create/update product; server เป็นผู้บันทึกค่าจริง */
   const saveProduct = async (event: FormEvent) => {
     event.preventDefault();
+    if (imageBusy || saving) return;
+    setProductError("");
     const price = Number(form.price);
     if (!form.name.trim() || !Number.isFinite(price) || price < 0 || !categories.some(item => item.id === form.category)) {
-      setMessage("กรุณากรอกชื่อสินค้าและราคาให้ถูกต้อง");
+      setProductError("กรุณากรอกชื่อสินค้า ราคา และหมวดหมู่ให้ถูกต้อง");
+      return;
+    }
+    if (products.some(item => item.id !== editing?.id && item.name.trim().toLowerCase() === form.name.trim().toLowerCase())) {
+      setProductError("มีชื่อสินค้านี้อยู่แล้ว กรุณาใช้ชื่ออื่น");
       return;
     }
     setSaving(true);
@@ -254,7 +269,7 @@ export function MenuManagement() {
       }
       setModalOpen(false);
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "บันทึกสินค้าไม่สำเร็จ");
+      setProductError(error instanceof Error ? error.message : "บันทึกสินค้าไม่สำเร็จ");
     } finally {
       setSaving(false);
     }
@@ -414,15 +429,16 @@ export function MenuManagement() {
       {modalOpen && !categoryOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" role="dialog" aria-modal="true">
           <form onSubmit={saveProduct} className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl">
+            {productError && <p role="alert" className="mb-4 rounded-xl bg-red-50 p-3 text-sm text-red-600">{productError}</p>}
             <div className="mb-5 flex items-center justify-between">
               <h2 className="text-lg font-semibold text-gray-800">{editing ? "แก้ไขสินค้า" : "เพิ่มสินค้า"}</h2>
-              <button type="button" onClick={() => setModalOpen(false)} className="rounded-full p-1 text-gray-400 hover:bg-gray-100"><X className="h-5 w-5" /></button>
+              <button type="button" disabled={saving || imageBusy} onClick={() => setModalOpen(false)} className="rounded-full p-1 text-gray-400 hover:bg-gray-100"><X className="h-5 w-5" /></button>
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
               <label className="sm:col-span-2 text-sm text-gray-600">ชื่อสินค้า<input required value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 outline-none focus:border-brand" /></label>
               <label className="text-sm text-gray-600">ราคา (บาท)<input required type="number" min="0" step="0.01" value={form.price} onChange={(event) => setForm({ ...form, price: event.target.value })} className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 outline-none focus:border-brand" /></label>
-              <div><label className="text-sm text-gray-600">หมวดหมู่<select aria-label="หมวดหมู่" required value={form.category} onChange={(event) => setForm({ ...form, category: event.target.value })} className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 outline-none focus:border-brand"><option value="" disabled>เลือกหมวดหมู่</option>{categories.map((category) => <option key={category.id} value={category.id}>{category.label}</option>)}</select></label><button type="button" onClick={openCategory} className="mt-2 text-sm font-medium text-brand">+ เพิ่มหมวดหมู่ใหม่</button></div>
-              <label className="sm:col-span-2 text-sm text-gray-600">URL รูปภาพ<input value={form.image} onChange={(event) => setForm({ ...form, image: event.target.value })} className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 outline-none focus:border-brand" /></label>
+              <div><label className="text-sm text-gray-600">หมวดหมู่<select aria-label="หมวดหมู่" required value={form.category} onChange={(event) => setForm({ ...form, category: event.target.value })} className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 outline-none focus:border-brand"><option value="" disabled>เลือกหมวดหมู่</option>{categories.map((category) => <option key={category.id} value={category.id}>{category.label}</option>)}</select></label><button type="button" disabled={imageBusy} onClick={openCategory} className="mt-2 text-sm font-medium text-brand">+ เพิ่มหมวดหมู่ใหม่</button></div>
+              <ProductImageInput value={form.image} onChange={image => setForm(current => ({ ...current, image }))} onBusyChange={setImageBusy} disabled={saving || imageBusy} />
               <label className="flex items-center gap-2 text-sm text-gray-600"><input type="checkbox" checked={form.bestseller} onChange={(event) => setForm({ ...form, bestseller: event.target.checked })} /> สินค้าขายดี</label>
               <label className="flex items-center gap-2 text-sm text-gray-600"><input type="checkbox" checked={form.recommended} onChange={(event) => setForm({ ...form, recommended: event.target.checked })} /> สินค้าแนะนำ</label>
               <div className="sm:col-span-2 rounded-xl border border-orange-200 bg-orange-50 p-3">
@@ -431,8 +447,8 @@ export function MenuManagement() {
               </div>
             </div>
             <div className="mt-6 flex justify-end gap-2">
-              <button type="button" onClick={() => setModalOpen(false)} className="rounded-full border border-gray-200 px-4 py-2 text-sm text-gray-600">ยกเลิก</button>
-              <button type="submit" disabled={saving} className="rounded-full bg-brand px-5 py-2 text-sm font-medium text-white disabled:opacity-50">{saving ? "กำลังบันทึก..." : "บันทึก"}</button>
+              <button type="button" disabled={saving || imageBusy} onClick={() => setModalOpen(false)} className="rounded-full border border-gray-200 px-4 py-2 text-sm text-gray-600">ยกเลิก</button>
+              <button type="submit" disabled={saving || imageBusy} className="rounded-full bg-brand px-5 py-2 text-sm font-medium text-white disabled:opacity-50">{saving ? "กำลังบันทึก..." : "บันทึก"}</button>
             </div>
           </form>
         </div>
@@ -452,16 +468,16 @@ export function MenuManagement() {
           <form onSubmit={saveTopping} className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl">
             <div className="mb-5 flex items-center justify-between">
               <h2 className="text-lg font-semibold text-gray-800">{editingTopping ? "แก้ไขท็อปปิ้ง" : "เพิ่มท็อปปิ้ง"}</h2>
-              <button type="button" onClick={() => setToppingModalOpen(false)} className="rounded-full p-1 text-gray-400 hover:bg-gray-100"><X className="h-5 w-5" /></button>
+              <button type="button" disabled={saving || imageBusy} onClick={() => setToppingModalOpen(false)} className="rounded-full p-1 text-gray-400 hover:bg-gray-100"><X className="h-5 w-5" /></button>
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
               <label className="sm:col-span-2 text-sm text-gray-600">ชื่อท็อปปิ้ง<input required value={toppingForm.name} onChange={(event) => setToppingForm({ ...toppingForm, name: event.target.value })} className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 outline-none focus:border-brand" /></label>
               <label className="text-sm text-gray-600">ราคา (บาท)<input required type="number" min="0" step="0.01" value={toppingForm.price} onChange={(event) => setToppingForm({ ...toppingForm, price: event.target.value })} className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 outline-none focus:border-brand" /></label>
               <label className="text-sm text-gray-600">กลุ่มราคา<select value={toppingForm.tier} onChange={(event) => setToppingForm({ ...toppingForm, tier: Number(event.target.value) as 5 | 10 })} className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 outline-none focus:border-brand"><option value={5}>5 บาท</option><option value={10}>10 บาท</option></select></label>
               <label className="text-sm text-gray-600">จำนวนสต๊อก<input required type="number" min="0" step="1" value={toppingForm.stockQty} onChange={(event) => setToppingForm({ ...toppingForm, stockQty: event.target.value })} className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 outline-none focus:border-brand" /></label>
-              <label className="sm:col-span-2 text-sm text-gray-600">URL รูปภาพ<input value={toppingForm.image} onChange={(event) => setToppingForm({ ...toppingForm, image: event.target.value })} className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 outline-none focus:border-brand" /></label>
+              <ProductImageInput value={toppingForm.image} onChange={image => setToppingForm(current => ({ ...current, image }))} onBusyChange={setImageBusy} disabled={saving || imageBusy} />
             </div>
-            <div className="mt-6 flex justify-end gap-2"><button type="button" onClick={() => setToppingModalOpen(false)} className="rounded-full border border-gray-200 px-4 py-2 text-sm text-gray-600">ยกเลิก</button><button type="submit" disabled={saving} className="rounded-full bg-brand px-5 py-2 text-sm font-medium text-white disabled:opacity-50">{saving ? "กำลังบันทึก..." : "บันทึก"}</button></div>
+            <div className="mt-6 flex justify-end gap-2"><button type="button" disabled={saving || imageBusy} onClick={() => setToppingModalOpen(false)} className="rounded-full border border-gray-200 px-4 py-2 text-sm text-gray-600">ยกเลิก</button><button type="submit" disabled={saving || imageBusy} className="rounded-full bg-brand px-5 py-2 text-sm font-medium text-white disabled:opacity-50">{saving ? "กำลังบันทึก..." : "บันทึก"}</button></div>
           </form>
         </div>
       )}
