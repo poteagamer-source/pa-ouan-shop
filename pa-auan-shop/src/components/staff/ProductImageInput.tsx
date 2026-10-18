@@ -34,7 +34,7 @@ export function ProductImageInput({ value, onChange, onBusyChange, disabled = fa
     <div className="flex items-center gap-3">
       {value && <img src={value} alt="ตัวอย่างรูปสินค้า" className="h-20 w-20 rounded-xl border object-cover" />}
       <input ref={input} type="file" accept="image/jpeg,image/png,image/webp" aria-label="เลือกรูปสินค้า" className="sr-only" disabled={disabled || busy} onChange={event => { void upload(event.target.files?.[0]); event.target.value = ''; }} />
-      <button type="button" disabled={disabled || busy} onClick={() => input.current?.click()} className="flex items-center gap-2 rounded-xl border border-orange-200 px-3 py-2 text-brand disabled:opacity-50"><ImagePlus className="h-4 w-4" />{busy ? 'กำลังอัปโหลด...' : value ? 'เปลี่ยนรูปภาพ' : 'เพิ่มรูปภาพ'}</button>
+      <button type="button" disabled={disabled || busy} onClick={() => input.current?.click()} className="flex items-center gap-2 rounded-xl border border-orange-200 px-3 py-2 text-brand disabled:opacity-50"><ImagePlus className="h-4 w-4" />{busy ? 'กำลังอัปโหลด...' : value ? 'อัพโหลดรูปภาพ' : 'เพิ่มรูปภาพ'}</button>
     </div>
     <p className="mt-2 text-xs text-gray-400">JPEG, PNG, WebP ไม่เกิน 5 MB ระบบย่อไม่เกิน 800 px และบันทึกเป็น WebP</p>
     {size !== null && <p role="status" className="mt-1 text-xs text-green-600">อัปโหลดแล้ว ({Math.ceil(size / 1024)} KB) กดบันทึกเพื่อใช้รูปกับสินค้า</p>}
