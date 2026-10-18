@@ -66,7 +66,7 @@ export function SalesReportPage() {
     {loading && <div className="flex justify-center gap-2 py-12 text-sm text-gray-500"><Loader2 className="h-4 w-4 animate-spin" />กำลังโหลดข้อมูล</div>}
     {error && <p className="mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-600">{error}</p>}
 
-    <MonthlySalesTable />
+    <MonthlySalesTable from={from} to={to} />
 
     {!loading && !error && <>
       {/* รายการที่ชำระสำเร็จ ใช้วันที่/เวลารับเงินจริงจาก API */}
