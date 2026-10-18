@@ -11,13 +11,14 @@ import type { SalesOrder } from "../../types";
 /** หน้าตรวจสอบออเดอร์ที่ชำระเงินจริงจาก API (ไม่ใช้ mock data) */
 export function PurchaseOrdersPage() {
   const [orders, setOrders] = useState<SalesOrder[]>([]);
+  const [selectedDate, setSelectedDate] = useState("");
   const [selectedId, setSelectedId] = useState<string>();
   const [printOrderId, setPrintOrderId] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const load = () => fetchSales()
+    const load = () => fetchSales(selectedDate ? { from: selectedDate, to: selectedDate } : undefined)
       .then((data) => { setOrders(data); setSelectedId(current => data.some(order => order.id === current) ? current : data[0]?.id); })
       .catch((err) => setError(err instanceof Error ? err.message : "โหลดรายการสั่งซื้อไม่สำเร็จ"))
       .finally(() => setLoading(false));
@@ -26,7 +27,7 @@ export function PurchaseOrdersPage() {
       if (update.resource === "orders") void load();
     });
     return unsubscribe;
-  }, []);
+  }, [selectedDate]);
 
   const selected = useMemo(() => orders.find((order) => order.id === selectedId) ?? orders[0], [orders, selectedId]);
   const revenue = useMemo(() => orders.reduce((sum, order) => sum + order.total, 0), [orders]);
@@ -42,6 +43,15 @@ export function PurchaseOrdersPage() {
           <input id="print-order-id" value={printOrderId} onChange={event => setPrintOrderId(event.target.value)} placeholder="เลขออเดอร์" className="rounded border px-3 py-2 text-sm" />
           {printOrderId.trim() && <OrderPrintButton key={printOrderId.trim()} orderId={printOrderId.trim()} />}
         </div>
+      </div>
+
+      <div className="mb-4 flex flex-wrap items-end gap-3 rounded-xl border border-gray-200 bg-white p-4">
+        <label htmlFor="purchase-orders-date" className="block text-sm font-medium text-gray-700">
+          ดูรายการของวันที่
+          <input id="purchase-orders-date" type="date" value={selectedDate} onChange={(event) => setSelectedDate(event.target.value)} className="mt-1 block rounded-xl border border-gray-200 px-3 py-2 text-sm" />
+        </label>
+        {selectedDate && <button type="button" onClick={() => setSelectedDate("")} className="rounded-xl border border-gray-200 px-3 py-2 text-sm">แสดงทุกวัน</button>}
+        <p className="text-xs text-gray-400">{selectedDate ? `กำลังแสดงเฉพาะออเดอร์วันที่ ${selectedDate}` : "ยังไม่ได้เลือกวันที่ · แสดงออเดอร์ทุกวัน"}</p>
       </div>
 
       <div className="mb-6 flex flex-wrap gap-4">
